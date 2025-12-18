@@ -635,6 +635,13 @@
                     qcState.step = 'upload'; qcData.items = [];
                 };
 
+                // --- ADDED FUNCTION HERE ---
+                const clearSavedSession = () => {
+                    localStorage.removeItem('qc_backup_session');
+                    hasSavedSession.value = false;
+                };
+                // ---------------------------
+
                 const restoreSession = () => {
                     const b = JSON.parse(localStorage.getItem('qc_backup_session'));
                     Object.assign(qcState, b.state); qcData.items = b.items; currentItem.value = b.items[b.currentIdx]; hasSavedSession.value = false;
