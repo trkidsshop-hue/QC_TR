@@ -48,6 +48,8 @@
         ::-webkit-scrollbar-thumb { background: #ccc; border-radius: 3px; }
         ::-webkit-scrollbar-thumb:hover { background: #D4AF37; }
         .h-main-content { height: calc(100vh - 80px); }
+        .modal-enter-active, .modal-leave-active { transition: opacity 0.3s ease; }
+        .modal-enter-from, .modal-leave-to { opacity: 0; }
     </style>
 </head>
 <body id="app" class="text-gray-700 antialiased h-screen overflow-hidden flex">
@@ -73,7 +75,7 @@
         </div>
     </div>
 
-    <!-- Main App (Fixed Template Issue) -->
+    <!-- Main App -->
     <div v-else class="flex w-full h-full">
         <!-- Sidebar -->
         <aside :class="['bg-white shadow-xl flex flex-col z-30 transition-all duration-300', isSidebarOpen ? 'w-64' : 'w-20 hidden md:flex']">
@@ -138,15 +140,21 @@
 
                     <!-- Working Step -->
                     <div v-if="qcState.step === 'working'" class="flex flex-col h-full gap-2">
-                        <!-- Toolbar -->
-                        <div class="bg-white p-2 rounded-xl shadow-sm flex items-center justify-between shrink-0 h-16 px-4">
-                            <div class="flex gap-6 items-center">
-                                <div><span class="text-[10px] text-gray-400 uppercase">Total</span><div class="font-bold text-lg">{{ totalItems }}</div></div>
-                                <div><span class="text-[10px] text-gray-400 uppercase">Pass</span><div class="font-bold text-green-600 text-lg">{{ passedItems }}</div></div>
-                                <div><span class="text-[10px] text-gray-400 uppercase">Fail</span><div class="font-bold text-red-600 text-lg">{{ failedItems }}</div></div>
-                                <div><span class="text-[10px] text-gray-400 uppercase">Left</span><div class="font-bold text-gold-600 text-lg">{{ remainingItems }}</div></div>
+                        <!-- Toolbar (Center Stats) -->
+                        <div class="bg-white p-2 rounded-xl shadow-sm flex items-center justify-between shrink-0 h-20 px-4 relative">
+                            <!-- Left: Spacer to balance layout if needed, or just left aligned items -->
+                            <div class="w-64 hidden md:block"></div> 
+
+                            <!-- Center: Stats (Expanded) -->
+                            <div class="absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 flex gap-10 items-center">
+                                <div class="text-center"><span class="text-xs text-gray-400 uppercase font-bold tracking-wider">Total</span><div class="font-bold text-3xl text-gray-700">{{ totalItems }}</div></div>
+                                <div class="text-center"><span class="text-xs text-gray-400 uppercase font-bold tracking-wider">Pass</span><div class="font-bold text-3xl text-green-500">{{ passedItems }}</div></div>
+                                <div class="text-center"><span class="text-xs text-gray-400 uppercase font-bold tracking-wider">Fail</span><div class="font-bold text-3xl text-red-500">{{ failedItems }}</div></div>
+                                <div class="text-center"><span class="text-xs text-gray-400 uppercase font-bold tracking-wider">Left</span><div class="font-bold text-3xl text-gold-500">{{ remainingItems }}</div></div>
                             </div>
-                            <div class="flex gap-3 items-center">
+                            
+                            <!-- Right: Tools -->
+                            <div class="flex gap-3 items-center ml-auto z-10">
                                 <div class="relative"><i class="fas fa-barcode absolute left-3 top-2.5 text-gray-400"></i><input ref="barcodeInput" v-model="barcodeQuery" @keyup.enter="handleScan" class="pl-9 pr-4 py-1.5 border rounded-lg focus:ring-2 focus:ring-gold-500 outline-none w-64" placeholder="Scan UID"></div>
                                 <button v-if="remainingItems === 0" @click="finishSession" class="px-6 py-1.5 bg-gold-500 text-white rounded-lg font-bold shadow animate-pulse">FINISH JOB</button>
                                 <button @click="clearSavedSession" class="text-gray-400 hover:text-red-500 p-2" title="Reset"><i class="fas fa-trash-alt"></i></button>
@@ -279,21 +287,21 @@
                                     <th class="px-6 py-3 text-center">Total</th>
                                     <th class="px-6 py-3 text-center text-green-600">Pass</th>
                                     <th class="px-6 py-3 text-center text-red-600">Fail</th>
-                                    <th class="px-6 py-3 text-center">KPI (s/item)</th>
+                                    <th class="px-6 py-3 text-center">KPI (Time/Item)</th>
                                     <th class="px-6 py-3 text-center">Action</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                <tr v-for="s in reports" :key="s.id" class="border-b hover:bg-gray-50 bg-white">
+                                <tr v-for="s in reports" :key="s.id" @click="showSessionDetails(s)" class="border-b hover:bg-gold-50 cursor-pointer bg-white transition">
                                     <td class="px-6 py-4">{{ formatDate(s.created_at) }}</td>
                                     <td class="px-6 py-4 font-medium">{{ s.username }}</td>
                                     <td class="px-6 py-4">{{ s.filename }}</td>
                                     <td class="px-6 py-4 text-center">{{ s.total_items }}</td>
                                     <td class="px-6 py-4 text-center font-bold text-green-600">{{ s.pass_count }}</td>
                                     <td class="px-6 py-4 text-center font-bold text-red-600">{{ s.fail_count }}</td>
-                                    <td class="px-6 py-4 text-center"><span class="bg-gray-100 px-2 py-1 rounded">{{ s.kpi_score ? s.kpi_score.toFixed(2) : '-' }}</span></td>
+                                    <td class="px-6 py-4 text-center"><span class="bg-gray-100 px-2 py-1 rounded font-mono">{{ formatDuration(s.kpi_score) }}</span></td>
                                     <td class="px-6 py-4 text-center">
-                                        <button @click="downloadReport(s)" class="text-gold-600 hover:text-gold-800 font-medium"><i class="fas fa-download mr-1"></i> CSV</button>
+                                        <button @click.stop="downloadReport(s)" class="text-gold-600 hover:text-gold-800 font-medium"><i class="fas fa-download mr-1"></i> CSV</button>
                                     </td>
                                 </tr>
                                 <tr v-if="reports.length === 0"><td colspan="8" class="text-center py-8 text-gray-400">No reports found.</td></tr>
@@ -311,7 +319,7 @@
                         <button @click="searchHistory" class="absolute right-2 top-2 bg-gold-500 text-white rounded-full px-6 py-1.5 hover:bg-gold-600 font-medium">Search</button>
                     </div>
                     <div class="space-y-3">
-                        <div v-for="rec in historyResults" :key="rec.id" class="border rounded-xl p-4 flex justify-between items-center hover:shadow-md transition bg-white">
+                        <div v-for="rec in historyResults" :key="rec.id" @click="viewHistoryDetail(rec)" class="border rounded-xl p-4 flex justify-between items-center hover:shadow-md transition bg-white cursor-pointer hover:border-gold-300">
                             <div class="flex gap-4 items-center">
                                 <div :class="['w-12 h-12 rounded-full flex items-center justify-center text-xl text-white shadow-sm', rec.status==='pass'?'bg-green-500':'bg-red-500']">
                                     <i :class="rec.status==='pass'?'fas fa-check':'fas fa-times'"></i>
@@ -323,7 +331,7 @@
                                 </div>
                             </div>
                             <div class="text-right">
-                                <span class="text-xs bg-gray-100 text-gray-500 px-2 py-1 rounded">Session: {{ rec.session_id }}</span>
+                                <span class="text-xs bg-gray-100 text-gray-500 px-2 py-1 rounded">Click for details</span>
                             </div>
                         </div>
                         <div v-if="historySearched && historyResults.length === 0" class="text-center py-12 text-gray-400">
@@ -378,6 +386,109 @@
         </main>
     </div>
 
+    <!-- Universal Detail Modal (Used for History & Drill-down) -->
+    <div v-if="showDetailModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-70 backdrop-blur-sm p-4" @click.self="closeDetailModal">
+        <div class="bg-white w-full max-w-6xl h-[85vh] rounded-2xl shadow-2xl flex overflow-hidden animate-fade-in-up">
+             <!-- Left: Images -->
+             <div class="w-[400px] bg-gray-100 p-4 flex flex-col gap-3 border-r shrink-0 overflow-y-auto">
+                <div class="h-1/2 bg-white rounded-xl shadow-sm border flex items-center justify-center relative overflow-hidden">
+                    <img :src="getPublicUrl('Product_Pic', selectedDetailItem?.details_json?.product_name)" class="object-contain w-full h-full p-2" @error="handleImageError">
+                    <span class="absolute top-2 left-2 bg-black/60 text-white text-[10px] px-2 py-1 rounded">Product</span>
+                </div>
+                <div class="h-1/2 bg-white rounded-xl shadow-sm border flex items-center justify-center relative overflow-hidden">
+                    <img :src="getPublicUrl('Cartoon_Pic', selectedDetailItem?.details_json?.cartoon_name)" class="object-contain w-full h-full p-2" @error="handleImageError">
+                    <span class="absolute top-2 left-2 bg-black/60 text-white text-[10px] px-2 py-1 rounded">Pattern</span>
+                </div>
+             </div>
+             <!-- Right: Details -->
+             <div class="flex-1 p-8 overflow-y-auto relative">
+                 <button @click="closeDetailModal" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600"><i class="fas fa-times text-2xl"></i></button>
+                 
+                 <div class="flex justify-between items-start mb-6 border-b pb-4">
+                     <div>
+                         <h2 class="text-3xl font-bold text-gray-800">{{ selectedDetailItem?.details_json?.product_name }}</h2>
+                         <p class="text-gray-500 mt-1">Bill: {{ selectedDetailItem?.details_json?.bill_no }}</p>
+                     </div>
+                     <div class="text-right">
+                         <div v-if="selectedDetailItem?.status === 'pass'" class="bg-green-100 text-green-700 px-4 py-2 rounded-lg font-bold text-xl inline-flex items-center gap-2"><i class="fas fa-check-circle"></i> PASS</div>
+                         <div v-else class="bg-red-100 text-red-700 px-4 py-2 rounded-lg font-bold text-xl inline-flex items-center gap-2"><i class="fas fa-times-circle"></i> FAIL</div>
+                         <div v-if="selectedDetailItem?.fail_reason" class="text-red-500 text-sm mt-2 font-medium">{{ selectedDetailItem.fail_reason }}</div>
+                     </div>
+                 </div>
+
+                 <div class="bg-gray-50 p-6 rounded-2xl border border-gray-100 mb-6">
+                    <div class="text-xs text-gray-400 uppercase tracking-wider mb-2 font-bold">Text Details</div>
+                    <div class="text-2xl font-bold text-gray-800 mb-2 border-b pb-2">{{ selectedDetailItem?.details_json?.line1 || '-' }}</div>
+                    <div class="text-2xl font-bold text-gray-800 mb-2 border-b pb-2">{{ selectedDetailItem?.details_json?.line2 || '-' }}</div>
+                    <div class="text-2xl font-bold text-gray-800">{{ selectedDetailItem?.details_json?.line3 || '-' }}</div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-6 mb-6">
+                    <div class="bg-white p-4 rounded-xl border shadow-sm">
+                        <div class="text-xs text-gray-400 mb-1">Ink Color</div>
+                        <div class="flex items-center gap-3">
+                            <span class="w-8 h-8 rounded-full border shadow-sm" :style="{ backgroundColor: getInkColor(selectedDetailItem?.details_json?.ink_color) }"></span>
+                            <span class="font-bold text-lg">{{ selectedDetailItem?.details_json?.ink_color }}</span>
+                        </div>
+                    </div>
+                    <div class="bg-white p-4 rounded-xl border shadow-sm">
+                        <div class="text-xs text-gray-400 mb-1">Font</div>
+                        <div class="font-bold text-lg truncate">{{ selectedDetailItem?.details_json?.font }}</div>
+                    </div>
+                    <div class="bg-white p-4 rounded-xl border shadow-sm">
+                        <div class="text-xs text-gray-400 mb-1">Floor</div>
+                        <div class="font-bold text-lg">{{ selectedDetailItem?.details_json?.floor }}</div>
+                    </div>
+                    <div class="bg-white p-4 rounded-xl border shadow-sm">
+                        <div class="text-xs text-gray-400 mb-1">UID</div>
+                        <div class="font-mono text-lg text-gold-600">{{ selectedDetailItem?.item_uid }}</div>
+                    </div>
+                </div>
+
+                <div class="text-sm text-gray-400 mt-auto pt-4 border-t">
+                    Checked by <span class="text-gray-600 font-medium">{{ selectedDetailItem?.qc_by }}</span> on {{ formatDate(selectedDetailItem?.created_at) }}
+                </div>
+             </div>
+        </div>
+    </div>
+
+    <!-- Session Drill-down Modal -->
+    <div v-if="showSessionModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-70 backdrop-blur-sm p-8" @click.self="showSessionModal = false">
+        <div class="bg-white w-full max-w-4xl h-[80vh] rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-fade-in-up">
+            <div class="p-4 border-b flex justify-between items-center bg-gray-50">
+                <h3 class="font-bold text-xl text-gray-700">Session Details</h3>
+                <button @click="showSessionModal = false" class="text-gray-400 hover:text-red-500"><i class="fas fa-times text-xl"></i></button>
+            </div>
+            <div class="flex-1 overflow-y-auto p-0">
+                <table class="w-full text-sm text-left text-gray-500">
+                    <thead class="text-xs uppercase bg-gray-100 text-gray-700 sticky top-0">
+                        <tr>
+                            <th class="px-6 py-3">Time</th>
+                            <th class="px-6 py-3">UID</th>
+                            <th class="px-6 py-3 text-center">Status</th>
+                            <th class="px-6 py-3">Reason</th>
+                            <th class="px-6 py-3 text-center">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr v-for="item in sessionItems" :key="item.id" class="border-b hover:bg-gray-50">
+                            <td class="px-6 py-3">{{ new Date(item.created_at).toLocaleTimeString('th-TH') }}</td>
+                            <td class="px-6 py-3 font-mono">{{ item.item_uid }}</td>
+                            <td class="px-6 py-3 text-center">
+                                <span v-if="item.status==='pass'" class="text-green-600 font-bold">PASS</span>
+                                <span v-else class="text-red-600 font-bold">FAIL</span>
+                            </td>
+                            <td class="px-6 py-3">{{ item.fail_reason || '-' }}</td>
+                            <td class="px-6 py-3 text-center">
+                                <button @click="viewHistoryDetail(item)" class="text-blue-500 hover:text-blue-700 underline text-xs">View</button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
     <script>
         const { createApp, ref, reactive, computed, onMounted, onUnmounted, watch, nextTick } = Vue;
         const { createClient } = supabase;
@@ -401,6 +512,13 @@
                 const qcState = reactive({ step: 'upload', startTime: null, sessionId: null, filename: '' });
                 const qcData = reactive({ items: [] });
                 const currentItem = ref(null);
+                
+                // Modals
+                const showDetailModal = ref(false);
+                const selectedDetailItem = ref(null);
+                const showSessionModal = ref(false);
+                const sessionItems = ref([]);
+
                 const menus = [
                     { id: 'qc', label: 'QC Operation', icon: 'fa-qrcode' },
                     { id: 'report', label: 'Reports & KPI', icon: 'fa-chart-line' },
@@ -452,11 +570,17 @@
 
                 watch([() => qcData.items, qcState], () => {
                     if (qcState.step === 'working' && qcData.items.length) {
-                        localStorage.setItem('qc_backup_session', JSON.stringify({ state: qcState, items: qcData.items, currentIdx: qcData.items.indexOf(currentItem.value) }));
+                        localStorage.setItem('qc_backup_session', JSON.stringify({ 
+                            state: qcState, 
+                            items: qcData.items, 
+                            currentIdx: qcData.items.indexOf(currentItem.value) 
+                        }));
                     }
                 }, { deep: true });
 
-                watch([currentView, () => qcState.step], () => { if (currentView.value === 'qc' && qcState.step === 'working') nextTick(() => barcodeInput.value?.focus()); });
+                watch([currentView, () => qcState.step], () => { 
+                    if (currentView.value === 'qc' && qcState.step === 'working') nextTick(() => barcodeInput.value?.focus()); 
+                });
 
                 // --- Methods ---
                 const handleKeydown = (e) => {
@@ -467,29 +591,24 @@
 
                 const getPublicUrl = (bucket, filename) => {
                     if (!filename) return null;
-                    return `${SUPABASE_URL}/storage/v1/object/public/${bucket}/${encodeURIComponent(filename)}`;
+                    return `${SUPABASE_URL}/storage/v1/object/public/${bucket}/${encodeURIComponent(filename)}`; 
                 };
 
                 const handleImageError = (e) => {
                     const img = e.target;
                     const src = img.src;
-                    if (img.dataset.tried) {
-                        img.style.display = 'none';
-                        img.parentElement.querySelector('.text-gray-400').style.display = 'flex';
-                        return;
-                    }
-                    if (!src.toLowerCase().endsWith('.jpg') && !src.toLowerCase().endsWith('.png')) {
-                        img.dataset.tried = "true";
-                        img.src = src + '.jpg';
+                    if (!src.endsWith('.jpg') && !img.dataset.tried) {
+                         img.dataset.tried = "true";
+                         img.src = src + '.jpg';
                     } else {
-                        img.dataset.tried = "true"; 
-                        img.src = ''; 
+                        img.style.display = 'none';
+                        if(img.parentElement.querySelector('.text-gray-400')) img.parentElement.querySelector('.text-gray-400').style.display = 'flex';
                     }
                 };
 
                 const handleLogin = async () => {
                     loading.value = true;
-                    const { data } = await sb.from('app_users').select('*').eq('username', loginForm.username).eq('password', loginForm.password).single();
+                    const { data, error } = await sb.from('app_users').select('*').eq('username', loginForm.username).eq('password', loginForm.password).single();
                     if (data) {
                         user.value = data;
                         localStorage.setItem('qc_user', JSON.stringify(data));
@@ -500,7 +619,11 @@
                     loading.value = false;
                 };
 
-                const handleLogout = () => { user.value = null; localStorage.removeItem('qc_user'); qcState.step='upload'; };
+                const handleLogout = () => { 
+                    user.value = null; 
+                    localStorage.removeItem('qc_user'); 
+                    qcState.step='upload'; 
+                };
 
                 const processCSV = (file) => {
                     loading.value = true;
@@ -517,17 +640,19 @@
                             qcState.startTime = new Date();
                             qcState.step = 'working';
                             
-                            // Insert Session without user_id (using username) to bypass UUID type error
-                            const { data, error } = await sb.from('qc_sessions').insert({
+                            const payload = {
                                 username: user.value.username,
                                 filename: file.name,
                                 start_time: qcState.startTime,
                                 total_items: totalItems.value
-                            }).select().single();
+                            };
+                            if(user.value.id) payload.user_id = user.value.id;
+
+                            const { data, error } = await sb.from('qc_sessions').insert(payload).select().single();
 
                             if (error) {
                                 console.error(error);
-                                Swal.fire('DB Error', 'Failed to create session. Check DB Logs.', 'error');
+                                Swal.fire('DB Error', 'Failed to create session.', 'error');
                             } else {
                                 qcState.sessionId = data.id;
                             }
@@ -544,7 +669,7 @@
                         qc_by: user.value.username,
                         status: item.status,
                         fail_reason: item.fail_reason,
-                        details_json: item
+                        details_json: item 
                     });
                 };
 
@@ -552,8 +677,12 @@
                     loading.value = true;
                     let count = 0, fail = 0;
                     for (let file of imageUploader.value.files) {
-                        const { error } = await sb.storage.from(uploadBucket.value).upload(file.name, file, { upsert: true });
-                        if(error) fail++; else count++;
+                        const { error } = await sb.storage.from(uploadBucket.value).upload(
+                            encodeURIComponent(file.name), 
+                            file, 
+                            { upsert: true, contentType: file.type }
+                        );
+                        if(error) { console.error(error); fail++; } else { count++; }
                     }
                     loading.value = false;
                     Swal.fire(fail ? 'Completed with errors' : 'Success', `Uploaded: ${count}, Failed: ${fail}`, fail ? 'warning' : 'success');
@@ -562,16 +691,21 @@
                 // Helpers
                 const handleFileUpload = (e) => { if(e.target.files[0]) processCSV(e.target.files[0]); };
                 const handleDrop = (e) => { if(e.dataTransfer.files[0]) processCSV(e.dataTransfer.files[0]); };
+                
                 const handleScan = () => {
-                    const found = qcData.items.find(i => i.uid === barcodeQuery.value.trim());
-                    if(found) selectItem(found); else Swal.fire('Not Found', 'UID not in list', 'warning');
+                    const query = barcodeQuery.value.trim();
+                    const found = qcData.items.find(i => i.uid === query);
+                    if(found) selectItem(found);
+                    else Swal.fire({ title: 'Not Found', text: `UID "${query}" not found.`, icon: 'warning', timer: 1500, showConfirmButton: false });
                     barcodeQuery.value = '';
                 };
+
                 const selectItem = (item) => { currentItem.value = item; };
                 const navigateItem = (d) => {
                     const idx = qcData.items.indexOf(currentItem.value);
                     if(qcData.items[idx+d]) selectItem(qcData.items[idx+d]);
                 };
+
                 const markStatus = async (status) => {
                     if(!currentItem.value) return;
                     let reason = null;
@@ -597,7 +731,6 @@
                     if(i.data) settingsData.ink = i.data;
                 };
 
-                // Admin Functions
                 const addUser = async () => { if(newUser.username){ await sb.from('app_users').insert({...newUser}); newUser.username=''; fetchSettings(); }};
                 const deleteUser = async (id) => { await sb.from('app_users').delete().eq('id',id); fetchSettings(); };
                 const addReason = async () => { if(newReason.value){ await sb.from('settings_reasons').insert({reason_text:newReason.value}); newReason.value=''; fetchSettings(); }};
@@ -623,35 +756,97 @@
                     loading.value = false;
                 };
 
+                const viewHistoryDetail = (item) => {
+                    selectedDetailItem.value = item;
+                    showDetailModal.value = true;
+                };
+                const closeDetailModal = () => showDetailModal.value = false;
+
+                const showSessionDetails = async (session) => {
+                    loading.value = true;
+                    const { data } = await sb.from('qc_records').select('*').eq('session_id', session.id).order('created_at', {ascending:true});
+                    sessionItems.value = data || [];
+                    showSessionModal.value = true;
+                    loading.value = false;
+                };
+
                 const finishSession = async () => {
-                    const { isConfirmed } = await Swal.fire({ title: 'Finish?', showCancelButton: true });
+                    const { isConfirmed } = await Swal.fire({ title: 'Finish?', text:'Save session summary?', icon:'question', showCancelButton: true });
                     if(!isConfirmed) return;
+                    
                     const end = new Date();
+                    const start = qcState.startTime ? new Date(qcState.startTime) : end;
+                    const durationSeconds = (end - start) / 1000;
+                    const kpi = totalItems.value > 0 ? (durationSeconds / totalItems.value) : 0;
+
                     await sb.from('qc_sessions').update({ 
-                        end_time: end, pass_count: passedItems.value, fail_count: failedItems.value, 
-                        kpi_score: (end - new Date(qcState.startTime))/1000/totalItems.value 
+                        end_time: end, pass_count: passedItems.value, fail_count: failedItems.value, kpi_score: kpi 
                     }).eq('id', qcState.sessionId);
+                    
                     clearSavedSession();
                     qcState.step = 'upload'; qcData.items = [];
                 };
 
-                // --- ADDED FUNCTION HERE ---
-                const clearSavedSession = () => {
-                    localStorage.removeItem('qc_backup_session');
-                    hasSavedSession.value = false;
-                };
-                // ---------------------------
+                const clearSavedSession = () => { localStorage.removeItem('qc_backup_session'); hasSavedSession.value = false; };
 
                 const restoreSession = () => {
                     const b = JSON.parse(localStorage.getItem('qc_backup_session'));
-                    Object.assign(qcState, b.state); qcData.items = b.items; currentItem.value = b.items[b.currentIdx]; hasSavedSession.value = false;
+                    if(b) { Object.assign(qcState, b.state); qcData.items = b.items; currentItem.value = b.items[b.currentIdx]; hasSavedSession.value = false; }
+                };
+
+                const formatDuration = (seconds) => {
+                    if(!seconds && seconds !== 0) return '-';
+                    const m = Math.floor(seconds / 60);
+                    const s = Math.floor(seconds % 60);
+                    return `${m}:${s.toString().padStart(2, '0')}`;
                 };
 
                 const downloadReport = async (s) => {
-                    const { data } = await sb.from('qc_records').select('*').eq('session_id', s.id);
-                    if(!data) return;
-                    const csv = Papa.unparse(data);
-                    const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([csv],{type:'text/csv'})); a.download = `Report_${s.filename}.csv`; a.click();
+                    loading.value = true;
+                    // Fetch records ordered by time
+                    const { data } = await sb.from('qc_records').select('*').eq('session_id', s.id).order('created_at', {ascending: true});
+                    
+                    if(!data || data.length === 0) {
+                        loading.value = false;
+                        Swal.fire('Info', 'No records found.', 'info');
+                        return;
+                    }
+                    
+                    // Session start time for first item calc
+                    let prevTime = new Date(s.start_time).getTime();
+
+                    const csvData = data.map(r => {
+                        const currTime = new Date(r.created_at).getTime();
+                        const duration = (currTime - prevTime) / 1000; // seconds
+                        prevTime = currTime; // Update for next item
+
+                        const dateObj = new Date(r.created_at);
+
+                        // Flatten & Clean
+                        const row = {
+                            Date: dateObj.toLocaleDateString('th-TH'),
+                            Time: dateObj.toLocaleTimeString('th-TH'),
+                            Item_UID: r.item_uid,
+                            Status: r.status,
+                            Fail_Reason: r.fail_reason || '-',
+                            QC_By: r.qc_by,
+                            'KPI (Duration)': formatDuration(duration),
+                            ...r.details_json // Spread details
+                        };
+
+                        // Remove unwanted keys from spread (if any collision or extra)
+                        // Note: We created a new object, so we just didn't include session_id etc.
+                        // But details_json might have unwanted props? Usually fine.
+                        return row;
+                    });
+
+                    // Add BOM for Excel Thai support
+                    const csv = '\uFEFF' + Papa.unparse(csvData);
+                    const a = document.createElement('a'); 
+                    a.href = URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8;'})); 
+                    a.download = `Report_${s.filename}.csv`; 
+                    a.click();
+                    loading.value = false;
                 };
 
                 const getInkColor = (name) => settingsData.ink.find(i=>i.ink_name===name)?.hex_code || '#ddd';
@@ -664,8 +859,11 @@
                     handleLogin, handleLogout, handleFileUpload, handleDrop, handleScan, selectItem, navigateItem, markStatus,
                     handleImageError, getInkColor, reports, reportFilter, fetchReports, searchHistory, historySearch, historyResults, historySearched,
                     settingsTab, settingsData, newUser, newReason, newInk, uploadBucket, imageUploader, uploadImages, 
-                    finishSession, restoreSession, clearSavedSession, downloadReport, formatDate,
-                    addUser, deleteUser, addReason, deleteReason, addInk, deleteInk, menus
+                    finishSession, restoreSession, clearSavedSession, downloadReport, formatDate, formatDuration,
+                    addUser, deleteUser, addReason, deleteReason, addInk, deleteInk, menus,
+                    // Modals
+                    showDetailModal, selectedDetailItem, viewHistoryDetail, closeDetailModal,
+                    showSessionModal, sessionItems, showSessionDetails
                 };
             }
         }).mount('#app');
