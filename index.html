@@ -289,8 +289,8 @@
                                 </div>
                             </div>
 
-                            <!-- Col 2: Images (Center) - Stacked - Reduced Width -->
-                            <div class="w-[320px] shrink-0 flex flex-col gap-2 h-full">
+                            <!-- Col 2: Images (Center) - Stacked - EXPANDED WIDTH -->
+                            <div class="w-[500px] shrink-0 flex flex-col gap-2 h-full">
                                 <!-- Product Image -->
                                 <div class="h-1/2 bg-white rounded-xl shadow-sm overflow-hidden flex items-center justify-center relative group border">
                                     <img v-if="productImageUrl" :src="productImageUrl" @error="handleImageError($event, 'product')" class="object-contain w-full h-full p-2 transition transform group-hover:scale-105 duration-300">
@@ -823,7 +823,7 @@
                             const { data, error } = await sb
                                 .from('qc_sessions')
                                 .insert({
-                                    user_id: user.value.id,
+                                    // user_id: user.value.id, // Removed to avoid UUID mismatch
                                     username: user.value.username,
                                     filename: file.name,
                                     start_time: qcState.startTime,
@@ -832,7 +832,12 @@
                                 .select()
                                 .single();
                             
-                            if (data) qcState.sessionId = data.id;
+                            if (error) {
+                                console.error('Session Create Error:', error);
+                                Swal.fire('Error', 'Failed to create session. Check DB Logs/RLS.', 'error');
+                            } else if (data) {
+                                qcState.sessionId = data.id;
+                            }
                             
                             loading.value = false;
                             nextTick(() => barcodeInput.value?.focus());
