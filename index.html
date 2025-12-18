@@ -8,7 +8,7 @@
     <!-- Fonts: Prompt -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -54,7 +54,10 @@
 
     <!-- Loading -->
     <div v-if="loading" class="fixed inset-0 z-50 flex items-center justify-center bg-white bg-opacity-80 backdrop-blur-sm">
-        <i class="fas fa-circle-notch fa-spin text-4xl text-gold-500"></i>
+        <div class="flex flex-col items-center">
+            <i class="fas fa-circle-notch fa-spin text-4xl text-gold-500 mb-2"></i>
+            <span class="text-gold-600 font-bold">Processing...</span>
+        </div>
     </div>
 
     <!-- Login -->
@@ -70,8 +73,8 @@
         </div>
     </div>
 
-    <!-- Main App -->
-    <template v-else>
+    <!-- Main App (Fixed Template Issue) -->
+    <div v-else class="flex w-full h-full">
         <!-- Sidebar -->
         <aside :class="['bg-white shadow-xl flex flex-col z-30 transition-all duration-300', isSidebarOpen ? 'w-64' : 'w-20 hidden md:flex']">
             <div class="h-20 flex items-center justify-center border-b border-gray-100 shrink-0">
@@ -115,17 +118,21 @@
                 <div v-if="currentView === 'qc'" class="h-full flex flex-col">
                     <!-- Upload Step -->
                     <div v-if="qcState.step === 'upload'" class="flex-1 flex flex-col items-center justify-center">
-                        <div class="border-2 border-dashed border-gray-300 rounded-3xl p-12 bg-white hover:border-gold-500 cursor-pointer text-center" @click="$refs.fileInput.click()" @dragover.prevent @drop.prevent="handleDrop">
+                        <div class="border-2 border-dashed border-gray-300 rounded-3xl p-12 bg-white hover:border-gold-500 cursor-pointer text-center group" @click="$refs.fileInput.click()" @dragover.prevent @drop.prevent="handleDrop">
                             <input type="file" ref="fileInput" class="hidden" accept=".csv" @change="handleFileUpload">
-                            <i class="fas fa-cloud-upload-alt text-5xl text-gold-500 mb-4"></i>
+                            <div class="w-20 h-20 bg-gold-50 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition">
+                                <i class="fas fa-cloud-upload-alt text-4xl text-gold-500"></i>
+                            </div>
                             <h3 class="text-2xl font-bold text-gray-700 mb-2">Upload Production File</h3>
                             <p class="text-gray-400">Click to browse or drag file here</p>
                         </div>
+                        
                         <!-- Session Restore -->
-                        <div v-if="hasSavedSession" class="mt-6 flex gap-4 bg-blue-50 p-4 rounded-xl border border-blue-100">
-                            <span class="text-blue-800 self-center">Found unsaved session</span>
-                            <button @click="restoreSession" class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">Restore</button>
-                            <button @click="clearSavedSession" class="px-4 py-2 text-red-500 hover:bg-red-50 rounded">Discard</button>
+                        <div v-if="hasSavedSession" class="mt-6 flex gap-4 bg-blue-50 p-4 rounded-xl border border-blue-100 items-center animate-bounce">
+                            <i class="fas fa-history text-blue-500"></i>
+                            <span class="text-blue-800 font-medium">Found unsaved session</span>
+                            <button @click="restoreSession" class="px-4 py-1.5 bg-blue-500 text-white rounded-lg hover:bg-blue-600 text-sm">Restore</button>
+                            <button @click="clearSavedSession" class="px-4 py-1.5 text-red-500 hover:bg-red-50 rounded-lg text-sm">Discard</button>
                         </div>
                     </div>
 
@@ -134,15 +141,15 @@
                         <!-- Toolbar -->
                         <div class="bg-white p-2 rounded-xl shadow-sm flex items-center justify-between shrink-0 h-16 px-4">
                             <div class="flex gap-6 items-center">
-                                <div><span class="text-[10px] text-gray-400 uppercase">Total</span><div class="font-bold">{{ totalItems }}</div></div>
-                                <div><span class="text-[10px] text-gray-400 uppercase">Pass</span><div class="font-bold text-green-600">{{ passedItems }}</div></div>
-                                <div><span class="text-[10px] text-gray-400 uppercase">Fail</span><div class="font-bold text-red-600">{{ failedItems }}</div></div>
-                                <div><span class="text-[10px] text-gray-400 uppercase">Left</span><div class="font-bold text-gold-600">{{ remainingItems }}</div></div>
+                                <div><span class="text-[10px] text-gray-400 uppercase">Total</span><div class="font-bold text-lg">{{ totalItems }}</div></div>
+                                <div><span class="text-[10px] text-gray-400 uppercase">Pass</span><div class="font-bold text-green-600 text-lg">{{ passedItems }}</div></div>
+                                <div><span class="text-[10px] text-gray-400 uppercase">Fail</span><div class="font-bold text-red-600 text-lg">{{ failedItems }}</div></div>
+                                <div><span class="text-[10px] text-gray-400 uppercase">Left</span><div class="font-bold text-gold-600 text-lg">{{ remainingItems }}</div></div>
                             </div>
                             <div class="flex gap-3 items-center">
                                 <div class="relative"><i class="fas fa-barcode absolute left-3 top-2.5 text-gray-400"></i><input ref="barcodeInput" v-model="barcodeQuery" @keyup.enter="handleScan" class="pl-9 pr-4 py-1.5 border rounded-lg focus:ring-2 focus:ring-gold-500 outline-none w-64" placeholder="Scan UID"></div>
-                                <button v-if="remainingItems === 0" @click="finishSession" class="px-4 py-1.5 bg-gold-500 text-white rounded-lg font-bold shadow animate-pulse">FINISH</button>
-                                <button @click="clearSavedSession" class="text-gray-400 hover:text-red-500"><i class="fas fa-trash-alt"></i></button>
+                                <button v-if="remainingItems === 0" @click="finishSession" class="px-6 py-1.5 bg-gold-500 text-white rounded-lg font-bold shadow animate-pulse">FINISH JOB</button>
+                                <button @click="clearSavedSession" class="text-gray-400 hover:text-red-500 p-2" title="Reset"><i class="fas fa-trash-alt"></i></button>
                             </div>
                         </div>
 
@@ -150,29 +157,29 @@
                         <div class="flex-1 flex gap-3 overflow-hidden">
                             <!-- Left: List -->
                             <div class="w-[240px] bg-white rounded-xl shadow-sm flex flex-col shrink-0">
-                                <div class="p-2 border-b bg-gray-50 text-xs font-bold text-gray-600">ITEMS LIST</div>
+                                <div class="p-3 border-b bg-gray-50 text-xs font-bold text-gray-600 uppercase tracking-wide">Items List</div>
                                 <div class="flex-1 overflow-y-auto p-1 space-y-1">
                                     <div v-for="item in qcData.items" :key="item.uid" @click="selectItem(item)" 
                                         :class="['p-2 rounded border cursor-pointer flex justify-between items-center text-xs transition', item === currentItem ? 'border-gold-500 bg-yellow-50 ring-1 ring-gold-500' : 'border-gray-100 hover:bg-gray-50']">
-                                        <div class="truncate w-32 font-medium">{{ item.uid }}<br><span class="text-gray-400 font-normal">{{ item.product_name }}</span></div>
-                                        <i v-if="item.status === 'pass'" class="fas fa-check-circle text-green-500"></i>
-                                        <i v-else-if="item.status === 'fail'" class="fas fa-times-circle text-red-500"></i>
-                                        <i v-else class="far fa-circle text-gray-300"></i>
+                                        <div class="truncate w-32 font-medium text-gray-700">{{ item.uid }}<br><span class="text-gray-400 font-normal text-[10px]">{{ item.product_name }}</span></div>
+                                        <i v-if="item.status === 'pass'" class="fas fa-check-circle text-green-500 text-sm"></i>
+                                        <i v-else-if="item.status === 'fail'" class="fas fa-times-circle text-red-500 text-sm"></i>
+                                        <i v-else class="far fa-circle text-gray-300 text-sm"></i>
                                     </div>
                                 </div>
                             </div>
 
-                            <!-- Center: Images (Fixed 320px -> 450px for better visibility) -->
+                            <!-- Center: Images (Fixed 450px) -->
                             <div class="w-[450px] shrink-0 flex flex-col gap-2 h-full">
                                 <div class="h-1/2 bg-white rounded-xl shadow-sm border flex items-center justify-center relative overflow-hidden group">
-                                    <img v-if="productImageUrl" :src="productImageUrl" @error="handleImageError($event)" class="object-contain w-full h-full p-2 transition-transform group-hover:scale-105">
-                                    <div v-else class="text-gray-400 flex flex-col items-center"><i class="fas fa-image text-4xl mb-2"></i><span class="text-xs">No Image</span></div>
-                                    <span class="absolute top-2 left-2 bg-black/50 text-white text-[10px] px-2 py-1 rounded">Product</span>
+                                    <img v-if="productImageUrl" :src="productImageUrl" @error="handleImageError($event)" class="object-contain w-full h-full p-4 transition-transform group-hover:scale-105 duration-500">
+                                    <div v-else class="text-gray-400 flex flex-col items-center"><i class="fas fa-image text-5xl mb-2"></i><span class="text-sm">No Image</span></div>
+                                    <span class="absolute top-3 left-3 bg-black/60 text-white text-[10px] px-2 py-1 rounded backdrop-blur-sm">Product</span>
                                 </div>
                                 <div class="h-1/2 bg-white rounded-xl shadow-sm border flex items-center justify-center relative overflow-hidden group">
-                                    <img v-if="cartoonImageUrl" :src="cartoonImageUrl" @error="handleImageError($event)" class="object-contain w-full h-full p-2 transition-transform group-hover:scale-105">
-                                    <div v-else class="text-gray-400 flex flex-col items-center"><i class="fas fa-icons text-4xl mb-2"></i><span class="text-xs">No Pattern</span></div>
-                                    <span class="absolute top-2 left-2 bg-black/50 text-white text-[10px] px-2 py-1 rounded">Pattern: {{ currentItem?.cartoon_name || '-' }}</span>
+                                    <img v-if="cartoonImageUrl" :src="cartoonImageUrl" @error="handleImageError($event)" class="object-contain w-full h-full p-4 transition-transform group-hover:scale-105 duration-500">
+                                    <div v-else class="text-gray-400 flex flex-col items-center"><i class="fas fa-icons text-5xl mb-2"></i><span class="text-sm">No Pattern</span></div>
+                                    <span class="absolute top-3 left-3 bg-black/60 text-white text-[10px] px-2 py-1 rounded backdrop-blur-sm">Pattern: {{ currentItem?.cartoon_name || '-' }}</span>
                                 </div>
                             </div>
 
@@ -180,9 +187,9 @@
                             <div class="flex-1 bg-white rounded-xl shadow-sm p-6 overflow-hidden flex flex-col relative">
                                 <div v-if="currentItem" class="flex flex-col h-full">
                                     <div class="border-b pb-4 mb-4 flex justify-between items-start shrink-0">
-                                        <div class="overflow-hidden">
-                                            <h2 class="text-3xl font-bold text-gray-800 leading-tight">{{ currentItem.product_name }}</h2>
-                                            <p class="text-gray-500 mt-1">Bill: {{ currentItem.bill_no }}</p>
+                                        <div class="overflow-hidden pr-4">
+                                            <h2 class="text-3xl font-bold text-gray-800 leading-tight mb-1">{{ currentItem.product_name }}</h2>
+                                            <p class="text-gray-500">Bill: {{ currentItem.bill_no }}</p>
                                         </div>
                                         <div class="text-right shrink-0">
                                             <div class="text-xs text-gray-400">UID</div>
@@ -193,114 +200,183 @@
                                     <div class="flex-1 overflow-y-auto pr-2 space-y-6">
                                         <div class="bg-gray-50 p-5 rounded-2xl border border-gray-100">
                                             <div class="text-xs text-gray-400 uppercase tracking-wider mb-2 font-bold">Text Details</div>
-                                            <div class="text-3xl font-bold text-gray-800 mb-2 border-b border-gray-200 pb-2">{{ currentItem.line1 || '-' }}</div>
-                                            <div class="text-3xl font-bold text-gray-800 mb-2 border-b border-gray-200 pb-2">{{ currentItem.line2 || '-' }}</div>
+                                            <div class="text-3xl font-bold text-gray-800 mb-3 border-b border-gray-200 pb-3">{{ currentItem.line1 || '-' }}</div>
+                                            <div class="text-3xl font-bold text-gray-800 mb-3 border-b border-gray-200 pb-3">{{ currentItem.line2 || '-' }}</div>
                                             <div class="text-3xl font-bold text-gray-800">{{ currentItem.line3 || '-' }}</div>
                                         </div>
 
                                         <div class="grid grid-cols-2 gap-6">
-                                            <div class="bg-white p-4 rounded-xl border shadow-sm">
-                                                <div class="text-xs text-gray-400 mb-1">Ink Color</div>
-                                                <div class="flex items-center gap-3">
-                                                    <span class="w-12 h-12 rounded-full border-2 border-gray-200 shadow-inner" :style="{ backgroundColor: getInkColor(currentItem.ink_color) }"></span>
-                                                    <span class="text-xl font-bold">{{ currentItem.ink_color || '-' }}</span>
+                                            <div class="bg-white p-4 rounded-xl border shadow-sm flex flex-col justify-center">
+                                                <div class="text-xs text-gray-400 mb-2">Ink Color</div>
+                                                <div class="flex items-center gap-4">
+                                                    <span class="w-12 h-12 rounded-full border-2 border-gray-200 shadow-md" :style="{ backgroundColor: getInkColor(currentItem.ink_color) }"></span>
+                                                    <span class="text-2xl font-bold text-gray-700">{{ currentItem.ink_color || '-' }}</span>
                                                 </div>
                                             </div>
-                                            <div class="bg-white p-4 rounded-xl border shadow-sm">
-                                                <div class="text-xs text-gray-400 mb-1">Quantity</div>
-                                                <div class="text-4xl font-bold text-gray-800">{{ currentItem.qty || 1 }}</div>
+                                            <div class="bg-white p-4 rounded-xl border shadow-sm flex flex-col justify-center">
+                                                <div class="text-xs text-gray-400 mb-2">Quantity</div>
+                                                <div class="text-4xl font-bold text-gray-800">{{ currentItem.qty || 1 }} <span class="text-sm font-normal text-gray-400">pcs</span></div>
                                             </div>
                                             <div class="bg-white p-4 rounded-xl border shadow-sm">
                                                 <div class="text-xs text-gray-400 mb-1">Floor</div>
-                                                <div class="text-xl font-bold text-gray-800">{{ currentItem.floor || '-' }}</div>
+                                                <div class="text-2xl font-bold text-gray-800">{{ currentItem.floor || '-' }}</div>
                                             </div>
                                             <div class="bg-white p-4 rounded-xl border shadow-sm">
                                                 <div class="text-xs text-gray-400 mb-1">Font</div>
-                                                <div class="text-xl font-bold text-gray-800 truncate">{{ currentItem.font || '-' }}</div>
+                                                <div class="text-2xl font-bold text-gray-800 truncate">{{ currentItem.font || '-' }}</div>
                                             </div>
                                         </div>
 
-                                        <div v-if="currentItem.remark" class="bg-yellow-50 p-4 rounded-xl border border-yellow-200 text-yellow-900 shadow-sm flex gap-3">
-                                            <i class="fas fa-exclamation-circle text-yellow-600 mt-1"></i>
+                                        <div v-if="currentItem.remark" class="bg-yellow-50 p-4 rounded-xl border border-yellow-200 text-yellow-900 shadow-sm flex gap-3 items-start">
+                                            <i class="fas fa-exclamation-circle text-yellow-600 mt-1 text-xl"></i>
                                             <div>
-                                                <span class="font-bold">Note:</span> {{ currentItem.remark }}
+                                                <span class="font-bold block mb-1">Note:</span> 
+                                                <span class="text-lg">{{ currentItem.remark }}</span>
                                             </div>
                                         </div>
                                     </div>
 
                                     <div class="mt-4 pt-4 border-t flex flex-col gap-3 shrink-0">
-                                        <div class="flex gap-4 h-16">
-                                            <button @click="markStatus('fail')" class="flex-1 bg-white border-2 border-red-500 text-red-500 font-extrabold text-2xl rounded-2xl hover:bg-red-50 active:scale-95 transition shadow-sm">FAIL</button>
-                                            <button @click="markStatus('pass')" class="flex-1 bg-green-500 text-white font-extrabold text-2xl rounded-2xl hover:bg-green-600 active:scale-95 transition shadow-lg shadow-green-200">PASS</button>
+                                        <div class="flex gap-4 h-20">
+                                            <button @click="markStatus('fail')" class="flex-1 bg-white border-4 border-red-500 text-red-500 font-extrabold text-3xl rounded-2xl hover:bg-red-50 active:scale-95 transition shadow-sm flex items-center justify-center gap-2">
+                                                <i class="fas fa-times"></i> FAIL
+                                            </button>
+                                            <button @click="markStatus('pass')" class="flex-1 bg-green-500 text-white font-extrabold text-3xl rounded-2xl hover:bg-green-600 active:scale-95 transition shadow-lg shadow-green-200 flex items-center justify-center gap-2">
+                                                <i class="fas fa-check"></i> PASS
+                                            </button>
                                         </div>
-                                        <div class="flex justify-between text-xs text-gray-400">
-                                            <span>Hint: Use Keyboard Arrows ← →</span>
+                                        <div class="flex justify-between text-xs text-gray-400 px-1">
+                                            <span><i class="fas fa-arrow-left"></i> Prev (Left Arrow)</span>
+                                            <span>Next (Right Arrow) <i class="fas fa-arrow-right"></i></span>
                                         </div>
                                     </div>
                                 </div>
                                 <div v-else class="h-full flex flex-col items-center justify-center text-gray-300">
-                                    <i class="fas fa-qrcode text-8xl mb-4 opacity-50"></i>
-                                    <p class="text-xl font-medium">Ready to Scan</p>
+                                    <i class="fas fa-qrcode text-9xl mb-6 opacity-30"></i>
+                                    <p class="text-2xl font-medium text-gray-400">Scan Barcode to Start</p>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Reports, History, Settings (Simplified for brevity as logic is shared) -->
+                <!-- Reports View -->
                 <div v-else-if="currentView === 'report'" class="bg-white rounded-xl shadow-sm p-6 h-full overflow-y-auto">
-                    <!-- Report UI -->
-                    <div class="flex justify-between mb-4">
-                        <h3 class="text-xl font-bold">Performance Reports</h3>
-                        <div class="flex gap-2"><input type="date" v-model="reportFilter.date" class="border rounded px-3 py-1"><button @click="fetchReports" class="bg-gold-500 text-white px-4 rounded">Filter</button></div>
+                    <div class="flex justify-between items-center mb-6">
+                        <h3 class="text-2xl font-bold text-gray-800">Performance Reports</h3>
+                        <div class="flex gap-2 bg-gray-50 p-1 rounded-lg border">
+                             <input type="date" v-model="reportFilter.date" class="bg-transparent px-3 py-1 outline-none text-gray-600">
+                             <button @click="fetchReports" class="bg-gold-500 text-white px-4 py-1 rounded-md font-medium hover:bg-gold-600">Filter</button>
+                        </div>
                     </div>
-                    <table class="w-full text-sm text-left text-gray-500">
-                        <thead class="text-xs uppercase bg-gray-50"><tr><th class="px-4 py-2">Date</th><th class="px-4 py-2">File</th><th class="px-4 py-2 text-center">Total</th><th class="px-4 py-2 text-center text-green-600">Pass</th><th class="px-4 py-2 text-center text-red-600">Fail</th><th class="px-4 py-2 text-center">Action</th></tr></thead>
-                        <tbody>
-                            <tr v-for="s in reports" :key="s.id" class="border-b hover:bg-gray-50">
-                                <td class="px-4 py-3">{{ formatDate(s.created_at) }}</td>
-                                <td class="px-4 py-3">{{ s.filename }}</td>
-                                <td class="px-4 py-3 text-center">{{ s.total_items }}</td>
-                                <td class="px-4 py-3 text-center font-bold text-green-600">{{ s.pass_count }}</td>
-                                <td class="px-4 py-3 text-center font-bold text-red-600">{{ s.fail_count }}</td>
-                                <td class="px-4 py-3 text-center"><button @click="downloadReport(s)" class="text-gold-600 hover:underline">Download</button></td>
-                            </tr>
-                        </tbody>
-                    </table>
+                    <div class="overflow-hidden rounded-lg border">
+                        <table class="w-full text-sm text-left text-gray-500">
+                            <thead class="text-xs uppercase bg-gray-50 text-gray-700">
+                                <tr>
+                                    <th class="px-6 py-3">Date</th>
+                                    <th class="px-6 py-3">User</th>
+                                    <th class="px-6 py-3">File</th>
+                                    <th class="px-6 py-3 text-center">Total</th>
+                                    <th class="px-6 py-3 text-center text-green-600">Pass</th>
+                                    <th class="px-6 py-3 text-center text-red-600">Fail</th>
+                                    <th class="px-6 py-3 text-center">KPI (s/item)</th>
+                                    <th class="px-6 py-3 text-center">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr v-for="s in reports" :key="s.id" class="border-b hover:bg-gray-50 bg-white">
+                                    <td class="px-6 py-4">{{ formatDate(s.created_at) }}</td>
+                                    <td class="px-6 py-4 font-medium">{{ s.username }}</td>
+                                    <td class="px-6 py-4">{{ s.filename }}</td>
+                                    <td class="px-6 py-4 text-center">{{ s.total_items }}</td>
+                                    <td class="px-6 py-4 text-center font-bold text-green-600">{{ s.pass_count }}</td>
+                                    <td class="px-6 py-4 text-center font-bold text-red-600">{{ s.fail_count }}</td>
+                                    <td class="px-6 py-4 text-center"><span class="bg-gray-100 px-2 py-1 rounded">{{ s.kpi_score ? s.kpi_score.toFixed(2) : '-' }}</span></td>
+                                    <td class="px-6 py-4 text-center">
+                                        <button @click="downloadReport(s)" class="text-gold-600 hover:text-gold-800 font-medium"><i class="fas fa-download mr-1"></i> CSV</button>
+                                    </td>
+                                </tr>
+                                <tr v-if="reports.length === 0"><td colspan="8" class="text-center py-8 text-gray-400">No reports found.</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
 
+                <!-- History View -->
                 <div v-else-if="currentView === 'history'" class="bg-white rounded-xl shadow-sm p-6 h-full overflow-y-auto">
-                    <h3 class="text-xl font-bold mb-6">History Check</h3>
-                    <div class="flex gap-2 max-w-lg mx-auto mb-8">
-                        <input v-model="historySearch" @keyup.enter="searchHistory" class="flex-1 border rounded-full px-4 py-2" placeholder="Search UID...">
-                        <button @click="searchHistory" class="bg-gold-500 text-white rounded-full px-6">Search</button>
+                    <h3 class="text-2xl font-bold text-gray-800 mb-6">Item History Check</h3>
+                    <div class="max-w-xl mx-auto mb-8 relative">
+                        <i class="fas fa-search absolute left-4 top-3.5 text-gray-400"></i>
+                        <input v-model="historySearch" @keyup.enter="searchHistory" type="text" class="w-full pl-12 pr-24 py-3 rounded-full border focus:ring-2 focus:ring-gold-500 outline-none shadow-sm" placeholder="Scan Barcode or Type UID...">
+                        <button @click="searchHistory" class="absolute right-2 top-2 bg-gold-500 text-white rounded-full px-6 py-1.5 hover:bg-gold-600 font-medium">Search</button>
                     </div>
-                    <div class="space-y-2">
-                        <div v-for="rec in historyResults" :key="rec.id" class="border p-4 rounded-xl flex justify-between items-center">
+                    <div class="space-y-3">
+                        <div v-for="rec in historyResults" :key="rec.id" class="border rounded-xl p-4 flex justify-between items-center hover:shadow-md transition bg-white">
                             <div class="flex gap-4 items-center">
-                                <div :class="['w-10 h-10 rounded-full flex items-center justify-center text-white', rec.status==='pass'?'bg-green-500':'bg-red-500']"><i :class="rec.status==='pass'?'fas fa-check':'fas fa-times'"></i></div>
-                                <div><div class="font-bold">{{ rec.item_uid }}</div><div class="text-xs text-gray-500">{{ formatDate(rec.created_at) }} by {{ rec.qc_by }}</div></div>
+                                <div :class="['w-12 h-12 rounded-full flex items-center justify-center text-xl text-white shadow-sm', rec.status==='pass'?'bg-green-500':'bg-red-500']">
+                                    <i :class="rec.status==='pass'?'fas fa-check':'fas fa-times'"></i>
+                                </div>
+                                <div>
+                                    <h4 class="font-bold text-gray-800 text-lg">{{ rec.item_uid }}</h4>
+                                    <p class="text-sm text-gray-500">Checked by <span class="font-medium text-gold-600">{{ rec.qc_by }}</span> on {{ formatDate(rec.created_at) }}</p>
+                                    <p v-if="rec.status==='fail'" class="text-red-500 font-medium mt-1"><i class="fas fa-exclamation-triangle mr-1"></i> {{ rec.fail_reason }}</p>
+                                </div>
                             </div>
-                            <div v-if="rec.status==='fail'" class="text-red-500 text-sm">{{ rec.fail_reason }}</div>
+                            <div class="text-right">
+                                <span class="text-xs bg-gray-100 text-gray-500 px-2 py-1 rounded">Session: {{ rec.session_id }}</span>
+                            </div>
+                        </div>
+                        <div v-if="historySearched && historyResults.length === 0" class="text-center py-12 text-gray-400">
+                            <i class="fas fa-box-open text-4xl mb-2"></i><p>No history found for this item.</p>
                         </div>
                     </div>
                 </div>
 
+                <!-- Settings View -->
                 <div v-else-if="currentView === 'settings'" class="bg-white rounded-xl shadow-sm p-6 h-full overflow-y-auto">
-                    <h3 class="text-xl font-bold mb-6">Settings</h3>
-                    <!-- Upload Tab Only for brevity -->
-                    <div class="max-w-lg mx-auto border-2 border-dashed border-gray-300 rounded-xl p-8 text-center">
-                        <h4 class="font-bold mb-4">Upload Images</h4>
-                        <select v-model="uploadBucket" class="border rounded px-3 py-2 mb-4 w-full"><option value="Product_Pic">Product_Pic</option><option value="Cartoon_Pic">Cartoon_Pic</option></select>
-                        <input type="file" ref="imageUploader" accept="image/*" multiple class="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-gold-50 file:text-gold-700 hover:file:bg-gold-100 mb-4"/>
-                        <button @click="uploadImages" class="bg-gold-500 text-white px-6 py-2 rounded-full shadow hover:bg-gold-600">Upload</button>
-                        <p class="text-xs text-gray-400 mt-2">* Files will keep original names.</p>
+                    <h3 class="text-2xl font-bold text-gray-800 mb-6">System Settings</h3>
+                    
+                    <div class="flex border-b mb-6">
+                        <button v-for="tab in ['users', 'reasons', 'ink', 'upload']" :key="tab" 
+                            @click="settingsTab = tab"
+                            :class="['px-6 py-3 font-medium transition-colors border-b-2', settingsTab === tab ? 'border-gold-500 text-gold-600' : 'border-transparent text-gray-500 hover:text-gray-700']">
+                            {{ tab.charAt(0).toUpperCase() + tab.slice(1) }}
+                        </button>
+                    </div>
+
+                    <div v-if="settingsTab === 'users'">
+                        <div class="mb-4 flex gap-2">
+                            <input v-model="newUser.username" placeholder="Username" class="border rounded px-3 py-2">
+                            <input v-model="newUser.password" placeholder="Password" class="border rounded px-3 py-2">
+                            <select v-model="newUser.role" class="border rounded px-3 py-2"><option value="user">User</option><option value="admin">Admin</option></select>
+                            <button @click="addUser" class="bg-green-500 text-white px-4 rounded hover:bg-green-600">Add</button>
+                        </div>
+                        <ul class="divide-y"><li v-for="u in settingsData.users" :key="u.id" class="py-3 flex justify-between"><span>{{u.username}} <span class="bg-gray-200 text-xs px-1 rounded">{{u.role}}</span></span><button @click="deleteUser(u.id)" class="text-red-500"><i class="fas fa-trash"></i></button></li></ul>
+                    </div>
+
+                    <div v-if="settingsTab === 'reasons'">
+                         <div class="mb-4 flex gap-2"><input v-model="newReason" placeholder="New Reason" class="border rounded px-3 py-2 flex-1"><button @click="addReason" class="bg-green-500 text-white px-4 rounded hover:bg-green-600">Add</button></div>
+                        <ul class="divide-y"><li v-for="r in settingsData.reasons" :key="r.id" class="py-3 flex justify-between"><span>{{r.reason_text}}</span><button @click="deleteReason(r.id)" class="text-red-500"><i class="fas fa-trash"></i></button></li></ul>
+                    </div>
+
+                     <div v-if="settingsTab === 'ink'">
+                        <div class="mb-4 flex gap-2 items-center"><input v-model="newInk.name" placeholder="Name" class="border rounded px-3 py-2"><input v-model="newInk.hex" type="color" class="h-10 w-12 cursor-pointer border rounded bg-white p-1"><button @click="addInk" class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600">Add</button></div>
+                       <div class="grid grid-cols-4 gap-4"><div v-for="ink in settingsData.ink" :key="ink.id" class="p-3 border rounded flex justify-between items-center"><div class="flex items-center gap-2"><div class="w-6 h-6 rounded-full border" :style="{backgroundColor: ink.hex_code}"></div><span>{{ink.ink_name}}</span></div><button @click="deleteInk(ink.id)" class="text-red-500"><i class="fas fa-times"></i></button></div></div>
+                   </div>
+
+                    <div v-if="settingsTab === 'upload'">
+                        <div class="max-w-lg mx-auto border-2 border-dashed border-gray-300 rounded-xl p-8 text-center bg-gray-50">
+                             <div class="mb-4"><label class="block text-sm font-medium mb-2">Target Bucket</label><select v-model="uploadBucket" class="w-full border rounded px-3 py-2"><option value="Product_Pic">Product_Pic</option><option value="Cartoon_Pic">Cartoon_Pic</option></select></div>
+                             <input type="file" ref="imageUploader" accept="image/*" multiple class="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:bg-gold-50 file:text-gold-700 hover:file:bg-gold-100 mb-4"/>
+                             <button @click="uploadImages" class="bg-gold-500 text-white px-8 py-2 rounded-full font-bold shadow hover:bg-gold-600">Start Upload</button>
+                             <p class="text-xs text-gray-400 mt-4">* Supports Thai filenames. Original names preserved.</p>
+                        </div>
                     </div>
                 </div>
 
             </div>
         </main>
-    </template>
+    </div>
 
     <script>
         const { createApp, ref, reactive, computed, onMounted, onUnmounted, watch, nextTick } = Vue;
@@ -334,6 +410,10 @@
                 
                 // Settings Data
                 const settingsData = reactive({ users: [], reasons: [], ink: [] });
+                const settingsTab = ref('users');
+                const newUser = reactive({ username: '', password: '', role: 'user' });
+                const newReason = ref('');
+                const newInk = reactive({ name: '', hex: '#000000' });
                 const uploadBucket = ref('Product_Pic');
                 const imageUploader = ref(null);
 
@@ -342,6 +422,7 @@
                 const reportFilter = reactive({ date: new Date().toISOString().split('T')[0] });
                 const historySearch = ref('');
                 const historyResults = ref([]);
+                const historySearched = ref(false);
 
                 // Computed
                 const isLoggedIn = computed(() => !!user.value);
@@ -353,7 +434,7 @@
                 const failedItems = computed(() => qcData.items.filter(i => i.status === 'fail').reduce((a, i) => a + parseInt(i.qty || 1), 0));
                 const remainingItems = computed(() => totalItems.value - passedItems.value - failedItems.value);
 
-                // Image URLs (with Encoding Fix)
+                // Image URLs
                 const productImageUrl = computed(() => getPublicUrl('Product_Pic', currentItem.value?.product_name));
                 const cartoonImageUrl = computed(() => getPublicUrl('Cartoon_Pic', currentItem.value?.cartoon_name));
 
@@ -386,7 +467,6 @@
 
                 const getPublicUrl = (bucket, filename) => {
                     if (!filename) return null;
-                    // FIX: Encode Thai characters properly
                     return `${SUPABASE_URL}/storage/v1/object/public/${bucket}/${encodeURIComponent(filename)}`;
                 };
 
@@ -398,13 +478,12 @@
                         img.parentElement.querySelector('.text-gray-400').style.display = 'flex';
                         return;
                     }
-                    // Try adding .jpg if not present (Fix for CSV without extension)
                     if (!src.toLowerCase().endsWith('.jpg') && !src.toLowerCase().endsWith('.png')) {
                         img.dataset.tried = "true";
                         img.src = src + '.jpg';
                     } else {
-                        img.dataset.tried = "true"; // Stop loop
-                        img.src = ''; // trigger hide
+                        img.dataset.tried = "true"; 
+                        img.src = ''; 
                     }
                 };
 
@@ -438,9 +517,9 @@
                             qcState.startTime = new Date();
                             qcState.step = 'working';
                             
-                            // Insert Session
+                            // Insert Session without user_id (using username) to bypass UUID type error
                             const { data, error } = await sb.from('qc_sessions').insert({
-                                username: user.value.username, // Use username instead of user_id to avoid UUID error
+                                username: user.value.username,
                                 filename: file.name,
                                 start_time: qcState.startTime,
                                 total_items: totalItems.value
@@ -448,7 +527,7 @@
 
                             if (error) {
                                 console.error(error);
-                                Swal.fire('DB Error', 'Failed to create session. Check RLS/Permissions.', 'error');
+                                Swal.fire('DB Error', 'Failed to create session. Check DB Logs.', 'error');
                             } else {
                                 qcState.sessionId = data.id;
                             }
@@ -473,7 +552,6 @@
                     loading.value = true;
                     let count = 0, fail = 0;
                     for (let file of imageUploader.value.files) {
-                        // FIX: Use Original Name
                         const { error } = await sb.storage.from(uploadBucket.value).upload(file.name, file, { upsert: true });
                         if(error) fail++; else count++;
                     }
@@ -519,6 +597,14 @@
                     if(i.data) settingsData.ink = i.data;
                 };
 
+                // Admin Functions
+                const addUser = async () => { if(newUser.username){ await sb.from('app_users').insert({...newUser}); newUser.username=''; fetchSettings(); }};
+                const deleteUser = async (id) => { await sb.from('app_users').delete().eq('id',id); fetchSettings(); };
+                const addReason = async () => { if(newReason.value){ await sb.from('settings_reasons').insert({reason_text:newReason.value}); newReason.value=''; fetchSettings(); }};
+                const deleteReason = async (id) => { await sb.from('settings_reasons').delete().eq('id',id); fetchSettings(); };
+                const addInk = async () => { if(newInk.name){ await sb.from('settings_ink').insert({ink_name:newInk.name, hex_code:newInk.hex}); newInk.name=''; fetchSettings(); }};
+                const deleteInk = async (id) => { await sb.from('settings_ink').delete().eq('id',id); fetchSettings(); };
+
                 const fetchReports = async () => {
                     loading.value = true;
                     let q = sb.from('qc_sessions').select('*').order('created_at', { ascending: false });
@@ -531,6 +617,7 @@
                 const searchHistory = async () => {
                     if(!historySearch.value) return;
                     loading.value = true;
+                    historySearched.value = true;
                     const { data } = await sb.from('qc_records').select('*').eq('item_uid', historySearch.value.trim()).order('created_at', {ascending:false});
                     historyResults.value = data || [];
                     loading.value = false;
@@ -568,9 +655,10 @@
                     qcState, qcData, currentItem, totalItems, passedItems, failedItems, remainingItems,
                     barcodeQuery, barcodeInput, productImageUrl, cartoonImageUrl, hasSavedSession,
                     handleLogin, handleLogout, handleFileUpload, handleDrop, handleScan, selectItem, navigateItem, markStatus,
-                    handleImageError, getInkColor, reports, reportFilter, fetchReports, searchHistory, historySearch, historyResults,
-                    settingsData, uploadBucket, imageUploader, uploadImages, finishSession, restoreSession, clearSavedSession, downloadReport, formatDate,
-                    // Pass specific settings functions if needed (omitted for brevity but logic exists in setup)
+                    handleImageError, getInkColor, reports, reportFilter, fetchReports, searchHistory, historySearch, historyResults, historySearched,
+                    settingsTab, settingsData, newUser, newReason, newInk, uploadBucket, imageUploader, uploadImages, 
+                    finishSession, restoreSession, clearSavedSession, downloadReport, formatDate,
+                    addUser, deleteUser, addReason, deleteReason, addInk, deleteInk, menus
                 };
             }
         }).mount('#app');
