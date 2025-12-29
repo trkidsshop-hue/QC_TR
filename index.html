@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>QC Luxury System V.4.1</title>
+    <title>QC System V.4.7</title>
 
     <!-- Fonts: Prompt -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -53,6 +53,7 @@
         .z-modal-backdrop { z-index: 9998; }
         .z-modal-content { z-index: 9999; }
         .items-list-container { scroll-behavior: smooth; }
+        .bg-queue-row:hover { background-color: #FFFBEB !important; cursor: pointer; }
     </style>
 </head>
 <body id="app" class="text-gray-700 antialiased h-screen overflow-hidden flex">
@@ -90,7 +91,6 @@
                     :class="['w-full flex items-center gap-4 px-4 py-3 rounded-xl transition-all relative', currentView === menu.id ? 'bg-gold-500 text-white shadow-lg' : 'text-gray-500 hover:bg-gray-50 hover:text-gold-500']">
                     <i :class="['fas text-lg w-6 text-center', menu.icon]"></i>
                     <span v-if="isSidebarOpen" class="font-medium text-sm">{{ menu.label }}</span>
-                    <!-- Reject Badge -->
                     <span v-if="menu.id === 'reject' && rejectTotalCount > 0" class="absolute right-2 top-1/2 -translate-y-1/2 bg-red-500 text-white text-[10px] px-1.5 py-0.5 rounded-full font-bold">
                         {{ rejectTotalCount }}
                     </span>
@@ -133,7 +133,6 @@
                             <p class="text-gray-400 font-medium tracking-wide">Click to browse or drag file here</p>
                         </div>
 
-                        <!-- Session Restore UI -->
                         <div v-if="hasSavedSession" class="mt-8 flex gap-5 bg-blue-50 p-6 rounded-2xl border border-blue-200 items-center animate-bounce shadow-sm">
                             <div class="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center text-white text-xl">
                                 <i class="fas fa-history"></i>
@@ -186,14 +185,14 @@
 
                             <div class="w-[450px] shrink-0 flex flex-col gap-2 h-full">
                                 <div class="h-1/2 bg-white rounded-xl shadow-sm border flex items-center justify-center relative overflow-hidden group text-center cursor-pointer" @click="openInNewTab(productImageUrl)">
-                                    <img v-if="productImageUrl && !imgErrors.product" :src="productImageUrl" @error="handleImageError('product')" class="object-contain w-full h-full p-4 transition-transform group-hover:scale-105 duration-500">
+                                    <img v-if="currentItem && !imgErrors.product && currentItem.product_code !== '0'" :src="productImageUrl" @error="handleImageError('product')" class="object-contain w-full h-full p-4 transition-transform group-hover:scale-105 duration-500">
                                     <div v-else class="w-full h-full bg-gray-50 flex items-center justify-center text-gray-400 flex-col">
                                         <i class="fas fa-image text-3xl mb-2"></i><div class="text-xs font-bold uppercase">No Image</div>
                                     </div>
                                     <span class="absolute top-3 left-3 bg-black/60 text-white text-[10px] px-2 py-1 rounded backdrop-blur-sm uppercase">Product: {{ currentItem?.product_code || '-' }}</span>
                                 </div>
                                 <div class="h-1/2 bg-white rounded-xl shadow-sm border flex items-center justify-center relative overflow-hidden group text-center cursor-pointer" @click="openInNewTab(cartoonImageUrl)">
-                                    <img v-if="cartoonImageUrl && !imgErrors.cartoon" :src="cartoonImageUrl" @error="handleImageError('cartoon')" class="object-contain w-full h-full p-4 transition-transform group-hover:scale-105 duration-500">
+                                    <img v-if="currentItem && !imgErrors.cartoon && currentItem.cartoon_name !== '0'" :src="cartoonImageUrl" @error="handleImageError('cartoon')" class="object-contain w-full h-full p-4 transition-transform group-hover:scale-105 duration-500">
                                     <div v-else class="w-full h-full bg-gray-50 flex items-center justify-center text-gray-400 flex-col">
                                         <i class="fas fa-shapes text-3xl mb-2"></i><div class="text-xs font-bold uppercase">No Pattern</div>
                                     </div>
@@ -293,19 +292,31 @@
                             </div>
                         </div>
                         <div class="absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 flex gap-1 bg-gray-50 p-1 rounded-xl border shadow-inner">
-                            <button v-for="n in 6" :key="n" @click="activeRejectTab = n" 
+                            <button @click="activeRejectTab = 'queue'" 
+                                :class="['px-4 py-2 rounded-lg font-bold text-sm transition-all', activeRejectTab === 'queue' ? 'bg-gold-500 text-white shadow' : 'text-gray-400 hover:text-gold-500']">
+                                QUEUE
+                            </button>
+                            <!-- ลด STEP จาก 6 เหลือ 4 -->
+                            <button v-for="n in 4" :key="n" @click="activeRejectTab = n" 
                                 :class="['px-4 py-2 rounded-lg font-bold text-sm transition-all', activeRejectTab === n ? 'bg-gold-500 text-white shadow' : 'text-gray-400 hover:text-gold-500']">
                                 REJECT {{ n }} 
                                 <span class="ml-1 text-[10px] opacity-70">({{ getRejectCountByTab(n) }})</span>
                             </button>
                         </div>
                         <div class="flex gap-3 items-center z-10">
-                            <div class="relative"><i class="fas fa-search absolute left-3 top-2.5 text-gray-400"></i><input v-model="rejectSearchQuery" @keyup.enter="handleRejectScan" class="pl-9 pr-4 py-1.5 border rounded-lg focus:ring-2 focus:ring-gold-500 outline-none w-64 font-bold uppercase" placeholder="Search UID in Tab"></div>
-                            <button @click="fetchRejectItems" class="p-2 bg-gray-100 text-gray-500 rounded-lg hover:bg-gold-500 hover:text-white transition shadow-sm"><i class="fas fa-sync-alt"></i></button>
+                            <div class="relative w-full max-w-lg flex gap-2">
+                                <div class="relative flex-1">
+                                    <i class="fas fa-search absolute left-4 top-3 text-gray-400 font-bold"></i>
+                                    <input v-model="rejectSearchQuery" @keyup.enter="handleRejectScan" type="text" class="w-full pl-12 pr-4 py-2 rounded-full border-2 border-gold-400 focus:ring-4 focus:ring-gold-100 outline-none shadow-sm font-bold uppercase text-sm" placeholder="Scan or Type UID...">
+                                </div>
+                                <button @click="handleRejectScan" class="bg-gold-500 text-white rounded-full px-5 py-2 hover:bg-gold-600 font-bold uppercase text-xs tracking-tight shadow-md transition">Search</button>
+                                <button @click="clearRejectSearch" class="bg-gray-200 text-gray-600 rounded-full px-5 py-2 hover:bg-gray-300 font-bold uppercase text-xs tracking-tight shadow-sm transition">Clear</button>
+                            </div>
                         </div>
                     </div>
 
-                    <div class="flex-1 flex gap-3 overflow-hidden">
+                    <!-- Layout for Step 1-4 -->
+                    <div v-if="activeRejectTab !== 'queue'" class="flex-1 flex gap-3 overflow-hidden">
                         <div class="w-[260px] bg-white rounded-xl shadow-sm flex flex-col shrink-0">
                             <div class="p-3 border-b bg-gray-50 text-xs font-bold text-gray-600 uppercase tracking-wide">Reject List (Step {{ activeRejectTab }})</div>
                             <div class="flex-1 overflow-y-auto p-1 space-y-1 items-list-container">
@@ -325,13 +336,13 @@
                         </div>
 
                         <div class="w-[450px] shrink-0 flex flex-col gap-2 h-full">
-                            <div class="h-1/2 bg-white rounded-xl shadow-sm border flex items-center justify-center relative overflow-hidden group text-center cursor-pointer" @click="openInNewTab(getPublicUrl('Product_Pic', currentRejectItem.product_code, '.jpg'))">
-                                <img v-if="currentRejectItem && !imgErrors.product" :src="getPublicUrl('Product_Pic', currentRejectItem.product_code, '.jpg')" @error="handleImageError('product')" class="object-contain w-full h-full p-4 transition-transform group-hover:scale-105 duration-500">
+                            <div class="h-1/2 bg-white rounded-xl shadow-sm border flex items-center justify-center relative overflow-hidden group text-center cursor-pointer" @click="openInNewTab(rejectProductImageUrl)">
+                                <img v-if="currentRejectItem && !imgErrors.product && currentRejectItem.product_code !== '0'" :src="rejectProductImageUrl" @error="handleImageError('product')" class="object-contain w-full h-full p-4 transition-transform group-hover:scale-105 duration-500">
                                 <div v-else class="w-full h-full bg-gray-50 flex items-center justify-center text-gray-400 flex-col"><i class="fas fa-image text-3xl mb-2"></i><div class="text-xs font-bold uppercase">No Image</div></div>
                                 <span class="absolute top-3 left-3 bg-black/60 text-white text-[10px] px-2 py-1 rounded backdrop-blur-sm uppercase">Product: {{ currentRejectItem?.product_code || '-' }}</span>
                             </div>
-                            <div class="h-1/2 bg-white rounded-xl shadow-sm border flex items-center justify-center relative overflow-hidden group text-center cursor-pointer" @click="openInNewTab(getPublicUrl('Cartoon_Pic', currentRejectItem.cartoon_name, '.jpg'))">
-                                <img v-if="currentRejectItem && !imgErrors.cartoon" :src="getPublicUrl('Cartoon_Pic', currentRejectItem.cartoon_name, '.jpg')" @error="handleImageError('cartoon')" class="object-contain w-full h-full p-4 transition-transform group-hover:scale-105 duration-500">
+                            <div class="h-1/2 bg-white rounded-xl shadow-sm border flex items-center justify-center relative overflow-hidden group text-center cursor-pointer" @click="openInNewTab(rejectCartoonImageUrl)">
+                                <img v-if="currentRejectItem && !imgErrors.cartoon && currentRejectItem.cartoon_name !== '0'" :src="rejectCartoonImageUrl" @error="handleImageError('cartoon')" class="object-contain w-full h-full p-4 transition-transform group-hover:scale-105 duration-500">
                                 <div v-else class="w-full h-full bg-gray-50 flex items-center justify-center text-gray-400 flex-col"><i class="fas fa-shapes text-3xl mb-2"></i><div class="text-xs font-bold uppercase">No Pattern</div></div>
                                 <span class="absolute top-3 left-3 bg-black/60 text-white text-[10px] px-2 py-1 rounded backdrop-blur-sm uppercase">Pattern: {{ currentRejectItem?.cartoon_name || '-' }}</span>
                             </div>
@@ -405,7 +416,6 @@
                                             <i class="fas fa-check-double"></i> QC PASS
                                         </button>
                                     </div>
-                                    <!-- Add Prev/Next for Reject -->
                                     <div class="flex justify-between items-center gap-4 h-16 uppercase text-xl">
                                         <button @click="navigateRejectItem(-1)" class="flex-1 h-full bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-xl flex items-center justify-center gap-2 border border-gray-200 transition">
                                             <i class="fas fa-chevron-left"></i> Prev
@@ -422,6 +432,67 @@
                             </div>
                         </div>
                     </div>
+
+                    <!-- Layout for Queue View -->
+                    <div v-else class="flex-1 bg-white rounded-xl shadow-sm overflow-hidden flex flex-col">
+                        <div class="p-3 border-b bg-gray-50 flex justify-between items-center">
+                            <span class="text-xs font-bold text-gray-600 uppercase tracking-wide">Reject Queue (All Steps - Sorted by Oldest)</span>
+                            <span class="text-[10px] text-gray-400 font-bold uppercase italic">Click any row to view detailed step</span>
+                        </div>
+                        <div class="flex-1 overflow-y-auto">
+                            <table class="w-full text-[11px] text-left text-gray-500 border-collapse">
+                                <thead class="uppercase bg-gray-100 text-gray-700 sticky top-0 font-bold shadow-sm z-10">
+                                    <tr>
+                                        <th class="px-3 py-3 text-center w-10">#</th>
+                                        <th class="px-3 py-3 w-20">User</th>
+                                        <th class="px-3 py-3">Product Name / Bill</th>
+                                        <th class="px-3 py-3">Text Info (Line 1/2/3)</th>
+                                        <th class="px-3 py-3">Ink/Font/Floor</th>
+                                        <th class="px-3 py-3">Fail Reason</th>
+                                        <th class="px-3 py-3 text-center">RETRY</th>
+                                        <th class="px-3 py-3 text-center">บันทึกเวลา Reject</th>
+                                        <th class="px-3 py-3 text-right">Duration</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr v-for="(item, idx) in sortedRejectQueue" :key="item.id" 
+                                        @click="selectQueueItem(item)"
+                                        class="border-b bg-white transition bg-queue-row">
+                                        <td class="px-3 py-4 text-center font-bold text-gray-400">{{ idx + 1 }}</td>
+                                        <td class="px-3 py-4 font-bold uppercase text-gold-600">{{ item.qc_by }}</td>
+                                        <td class="px-3 py-4 uppercase">
+                                            <div class="font-bold text-gray-700 leading-tight">{{ item.product_name || '-' }}</div>
+                                            <div class="text-[9px] text-gray-400 font-bold mt-0.5">Bill: {{ item.bill_no || '-' }}</div>
+                                            <div class="text-[9px] text-gold-500 font-mono font-bold mt-0.5">{{ item.item_uid }}</div>
+                                        </td>
+                                        <td class="px-3 py-4 leading-tight uppercase font-medium">
+                                            <div v-if="item.line1" class="text-gray-800">1: {{ item.line1 }}</div>
+                                            <div v-if="item.line2" class="text-gray-800">2: {{ item.line2 }}</div>
+                                            <div v-if="item.line3" class="text-gray-800">3: {{ item.line3 }}</div>
+                                        </td>
+                                        <td class="px-3 py-4 uppercase leading-tight text-[10px] font-bold">
+                                            <div>Ink: {{ item.ink_color || '-' }}</div>
+                                            <div class="mt-0.5">Font: {{ item.font || '-' }}</div>
+                                            <div class="mt-0.5 text-gray-400">Floor: {{ item.floor || '-' }}</div>
+                                        </td>
+                                        <td class="px-3 py-4 italic font-bold text-red-500 uppercase">{{ item.fail_reason || '-' }}</td>
+                                        <td class="px-3 py-4 text-center">
+                                            <span class="bg-gray-100 px-2 py-1 rounded font-bold">STEP {{ item.retry_count || 1 }}</span>
+                                        </td>
+                                        <td class="px-3 py-4 text-center font-bold text-gray-600 whitespace-nowrap">
+                                            {{ formatTime(item.created_at) }}
+                                        </td>
+                                        <td class="px-3 py-4 text-right font-mono font-bold text-gray-800 whitespace-nowrap">
+                                            <i class="far fa-clock mr-1 text-[9px] text-gray-400"></i> {{ getRejectDuration(item.created_at) }}
+                                        </td>
+                                    </tr>
+                                    <tr v-if="sortedRejectQueue.length === 0">
+                                        <td colspan="9" class="text-center py-20 text-gray-300 italic text-xl uppercase tracking-widest">Queue is empty</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- View: Reports & KPI -->
@@ -429,17 +500,14 @@
                     <div class="flex flex-wrap justify-between items-center mb-6 gap-4">
                         <h3 class="text-2xl font-bold text-gray-800 uppercase">Performance Reports</h3>
                         <div class="flex flex-wrap gap-2 bg-gray-50 p-2 rounded-lg border items-center">
-                             <!-- Start Date -->
                              <div class="flex flex-col">
                                  <span class="text-[10px] font-bold text-gray-400 uppercase ml-1">Start Date</span>
                                  <input type="date" v-model="reportFilter.startDate" class="bg-white border rounded px-2 py-1 outline-none text-gray-600 font-bold uppercase text-xs">
                              </div>
-                             <!-- End Date -->
                              <div class="flex flex-col">
                                  <span class="text-[10px] font-bold text-gray-400 uppercase ml-1">End Date</span>
                                  <input type="date" v-model="reportFilter.endDate" class="bg-white border rounded px-2 py-1 outline-none text-gray-600 font-bold uppercase text-xs">
                              </div>
-                             <!-- User Select -->
                              <div class="flex flex-col">
                                  <span class="text-[10px] font-bold text-gray-400 uppercase ml-1">QC User</span>
                                  <select v-model="reportFilter.user" class="bg-white border rounded px-2 py-1 outline-none text-gray-600 font-bold uppercase text-xs">
@@ -495,14 +563,12 @@
                                 <input v-model="historySearch" @keyup.enter="searchHistory" type="text" class="w-full pl-12 pr-4 py-2 rounded-full border-2 border-gold-400 focus:ring-4 focus:ring-gold-100 outline-none shadow-sm font-bold uppercase text-sm" placeholder="Scan Barcode or Type UID...">
                             </div>
                             <button @click="searchHistory" class="bg-gold-500 text-white rounded-full px-5 py-2 hover:bg-gold-600 font-bold uppercase text-xs tracking-tight shadow-md transition">Search</button>
-                            <!-- New Clear Button -->
                             <button @click="clearHistorySearch" class="bg-gray-200 text-gray-600 rounded-full px-5 py-2 hover:bg-gray-300 font-bold uppercase text-xs tracking-tight shadow-sm transition">Clear</button>
                         </div>
                     </div>
                     
                     <div v-if="historyResults.length > 0" class="space-y-6">
                         <div v-for="(rec, idx) in historyResults" :key="rec.id" class="bg-gray-50 rounded-2xl p-6 border-2 border-gray-100 shadow-sm hover:shadow-md transition-shadow">
-                            
                             <div class="flex flex-wrap justify-between items-start gap-4 border-b pb-4 mb-4">
                                 <div class="text-left">
                                     <span class="text-gray-400 font-bold text-xl mr-2">#{{ idx + 1 }}</span>
@@ -524,7 +590,6 @@
                                     </div>
                                 </div>
                             </div>
-
                             <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
                                 <div class="space-y-4">
                                     <div class="text-left">
@@ -566,32 +631,32 @@
                                     </div>
                                 </div>
                             </div>
-
-                            <div class="mt-4 pt-6 border-t-2 border-dashed border-gray-200">
-                                <label class="text-sm font-black text-gray-400 uppercase tracking-widest block mb-4 text-center">Reference Images</label>
+                            <div class="mt-4 pt-6 border-t-2 border-dashed border-gray-200 text-center">
+                                <label class="text-sm font-black text-gray-400 uppercase tracking-widest block mb-4">Reference Images</label>
                                 <div class="flex flex-wrap justify-center gap-8">
-                                    <div class="group">
-                                        <div class="w-64 h-64 md:w-80 md:h-80 bg-white border-2 border-gray-200 rounded-3xl overflow-hidden shadow-sm flex items-center justify-center relative hover:border-gold-400 transition-colors cursor-pointer" @click="openInNewTab(getPublicUrl('Product_Pic', rec.product_code, '.jpg'))">
+                                    <!-- History: เพิ่ม Placeholder กรณีไม่มีรูป Product -->
+                                    <div class="group cursor-pointer" @click="openInNewTab(getPublicUrl('Product_Pic', rec.product_code, '.jpg'))">
+                                        <div v-if="rec.product_code && rec.product_code !== '0'" class="w-64 h-64 md:w-80 md:h-80 bg-white border-2 border-gray-200 rounded-3xl overflow-hidden shadow-sm flex items-center justify-center relative hover:border-gold-400 transition-colors">
                                             <img :src="getPublicUrl('Product_Pic', rec.product_code, '.jpg')" class="max-w-full max-h-full object-contain p-2 group-hover:scale-110 transition-transform duration-500">
                                             <div class="absolute bottom-0 inset-x-0 bg-black/60 text-white text-[10px] py-1 text-center font-bold uppercase tracking-widest backdrop-blur-sm">Product: {{ rec.product_code }}</div>
                                         </div>
+                                        <div v-else class="w-64 h-64 md:w-80 md:h-80 bg-gray-50 border-2 border-gray-200 rounded-3xl overflow-hidden flex items-center justify-center text-gray-400 flex-col uppercase font-bold">
+                                            <i class="fas fa-image text-3xl mb-2"></i><div class="text-xs">No Image</div>
+                                        </div>
                                     </div>
-                                    <div class="group">
-                                        <div class="w-64 h-64 md:w-80 md:h-80 bg-white border-2 border-gray-200 rounded-3xl overflow-hidden shadow-sm flex items-center justify-center relative hover:border-gold-400 transition-colors cursor-pointer" @click="openInNewTab(getPublicUrl('Cartoon_Pic', rec.cartoon_name, '.jpg'))">
+                                    <!-- History: เพิ่ม Placeholder กรณีไม่มีรูป Pattern -->
+                                    <div class="group cursor-pointer" @click="openInNewTab(getPublicUrl('Cartoon_Pic', rec.cartoon_name, '.jpg'))">
+                                        <div v-if="rec.cartoon_name && rec.cartoon_name !== '0'" class="w-64 h-64 md:w-80 md:h-80 bg-white border-2 border-gray-200 rounded-3xl overflow-hidden shadow-sm flex items-center justify-center relative hover:border-gold-400 transition-colors">
                                             <img :src="getPublicUrl('Cartoon_Pic', rec.cartoon_name, '.jpg')" class="max-w-full max-h-full object-contain p-2 group-hover:scale-110 transition-transform duration-500">
                                             <div class="absolute bottom-0 inset-x-0 bg-black/60 text-white text-[10px] py-1 text-center font-bold uppercase tracking-widest backdrop-blur-sm">Pattern: {{ rec.cartoon_name }}</div>
+                                        </div>
+                                        <div v-else class="w-64 h-64 md:w-80 md:h-80 bg-gray-50 border-2 border-gray-200 rounded-3xl overflow-hidden flex items-center justify-center text-gray-400 flex-col uppercase font-bold">
+                                            <i class="fas fa-shapes text-3xl mb-2"></i><div class="text-xs">No Pattern</div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
-
                         </div>
-                    </div>
-                    
-                    <div v-if="historySearched && historyResults.length === 0" class="text-center py-20 text-gray-400 italic bg-gray-50 rounded-3xl border-2 border-dashed">
-                        <i class="fas fa-box-open text-6xl mb-4 opacity-20"></i>
-                        <p class="font-black text-2xl uppercase tracking-widest">No history records found.</p>
-                        <p class="text-sm font-bold mt-2">กรุณาตรวจสอบ Item UID อีกครั้ง</p>
                     </div>
                 </div>
 
@@ -656,6 +721,7 @@
                         <tr>
                             <th class="px-4 py-3 text-center">#</th>
                             <th class="px-4 py-3 text-center">เวลาตรวจ</th>
+                            <th class="px-4 py-3 text-center tracking-tighter">Reject Duration</th>
                             <th class="px-4 py-3 tracking-tighter">Item UID</th>
                             <th class="px-4 py-3 text-center uppercase tracking-tighter">Result</th>
                             <th class="px-4 py-3 text-center">RETRY</th>
@@ -669,6 +735,9 @@
                         <tr v-for="(item, idx) in sessionItems" :key="item.id" class="border-b hover:bg-gray-50 font-medium">
                             <td class="px-4 py-3 text-center font-bold text-gray-400">{{ idx + 1 }}</td>
                             <td class="px-4 py-3 text-center font-bold whitespace-nowrap leading-none">{{ formatTime(item.created_at) }}</td>
+                            <td :class="['px-4 py-3 text-center font-bold', (item.reject_duration > 3600) ? 'text-orange-600 font-black' : 'text-blue-600']">
+                                {{ item.reject_duration ? formatDuration(item.reject_duration) : '-' }}
+                            </td>
                             <td class="px-4 py-3 font-mono font-bold text-gold-600 uppercase tracking-tighter">{{ item.item_uid }}</td>
                             <td class="px-4 py-3 text-center uppercase">
                                 <span :class="['px-2 py-1 rounded-full font-bold text-[9px]', item.status==='pass'?'bg-green-500 text-white':'bg-red-500 text-white']">{{ item.status }}</span>
@@ -751,12 +820,14 @@
                 const historySearched = ref(false);
                 const showSessionModal = ref(false);
                 const sessionItems = ref([]);
+                const currentViewingSession = ref(null);
 
                 const rejectData = reactive({ items: [] });
-                const activeRejectTab = ref(1);
+                const activeRejectTab = ref('queue');
                 const currentRejectItem = ref(null);
                 const rejectSearchQuery = ref('');
                 const rejectTotalCount = computed(() => rejectData.items.length);
+                const currentTime = ref(new Date());
 
                 const viewTitle = computed(() => menus.find(m => m.id === currentView.value)?.label || 'System');
                 const totalItems = computed(() => qcData.items.reduce((a, i) => a + parseInt(i.qty || 1), 0));
@@ -765,6 +836,9 @@
                 const remainingItems = computed(() => totalItems.value - passedItems.value - failedItems.value);
                 const productImageUrl = computed(() => getPublicUrl('Product_Pic', currentItem.value?.product_code, productExt.value));
                 const cartoonImageUrl = computed(() => getPublicUrl('Cartoon_Pic', currentItem.value?.cartoon_name, cartoonExt.value));
+
+                const rejectProductImageUrl = computed(() => getPublicUrl('Product_Pic', currentRejectItem.value?.product_code, productExt.value));
+                const rejectCartoonImageUrl = computed(() => getPublicUrl('Cartoon_Pic', currentRejectItem.value?.cartoon_name, cartoonExt.value));
 
                 onMounted(() => {
                     const savedUser = localStorage.getItem('qc_user');
@@ -781,6 +855,7 @@
                     }
                     window.addEventListener('keydown', handleKeydown);
                     setInterval(fetchRejectItems, 60000); 
+                    setInterval(() => { currentTime.value = new Date(); }, 1000); 
                 });
 
                 watch(currentView, (newVal) => { if (newVal === 'reject') fetchRejectItems(); });
@@ -799,6 +874,11 @@
                             if (el) el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
                         });
                     }
+                });
+
+                watch(currentRejectItem, (newVal) => {
+                    imgErrors.product = false; imgErrors.cartoon = false;
+                    productExt.value = '.jpg'; cartoonExt.value = '.jpg';
                 });
 
                 const restoreSession = () => {
@@ -920,12 +1000,13 @@
 
                 const fetchRejectItems = async () => {
                     try {
-                        const { data } = await sb.from('qc_records').select('*').eq('is_rejected', true);
+                        const { data } = await sb.from('qc_records').select('*').eq('is_rejected', true).order('created_at', {ascending: true});
                         if (data) rejectData.items = data;
                     } catch (e) { console.error(e); }
                 };
 
                 const filteredRejectItems = computed(() => {
+                    if(activeRejectTab.value === 'queue') return [];
                     let items = rejectData.items.filter(i => i.retry_count === activeRejectTab.value);
                     if (rejectSearchQuery.value) {
                         const q = rejectSearchQuery.value.trim().toUpperCase();
@@ -934,13 +1015,26 @@
                     return items;
                 });
 
+                const sortedRejectQueue = computed(() => {
+                    return [...rejectData.items].sort((a,b) => new Date(a.created_at) - new Date(b.created_at));
+                });
+
                 const getRejectCountByTab = (tab) => rejectData.items.filter(i => i.retry_count === tab).length;
+                
                 const handleRejectScan = () => {
-                    const found = filteredRejectItems.value.find(i => i.item_uid === rejectSearchQuery.value.trim().toUpperCase());
-                    if (found) currentRejectItem.value = found;
-                    else Swal.fire({ title: 'Not Found in Tab', icon: 'warning', timer: 1000 });
-                    rejectSearchQuery.value = '';
+                    if (!rejectSearchQuery.value) return;
+                    const q = rejectSearchQuery.value.trim().toUpperCase();
+                    const found = rejectData.items.find(i => i.item_uid === q);
+                    if (found) {
+                        activeRejectTab.value = found.retry_count;
+                        currentRejectItem.value = found;
+                        rejectSearchQuery.value = '';
+                    } else {
+                        Swal.fire({ title: 'Not Found in Any Step', icon: 'warning', timer: 1000 });
+                    }
                 };
+
+                const clearRejectSearch = () => { rejectSearchQuery.value = ''; };
 
                 const navigateRejectItem = (d) => {
                     const list = filteredRejectItems.value;
@@ -952,10 +1046,24 @@
                     }
                 };
 
+                const selectQueueItem = (item) => {
+                    activeRejectTab.value = item.retry_count || 1;
+                    currentRejectItem.value = item;
+                };
+
                 const markRejectStatus = async (status) => {
                     if (!currentRejectItem.value) return;
                     const item = currentRejectItem.value;
-                    let updates = { status: status, qc_by: user.value.username, created_at: new Date() };
+                    
+                    // Logic คำนวณระยะเวลาที่ดองไว้ในระบบ Reject ก่อนบันทึกทับ
+                    const durationSec = Math.floor((new Date() - new Date(item.created_at)) / 1000);
+
+                    let updates = { 
+                        status: status, 
+                        qc_by: user.value.username, 
+                        created_at: new Date(),
+                        reject_duration: durationSec // บันทึก Duration ของรอบนั้นลงไป
+                    };
 
                     if (status === 'pass') {
                         updates.is_rejected = false;
@@ -967,7 +1075,8 @@
                         });
                         if (!value) return; 
                         updates.fail_reason = value;
-                        updates.retry_count = Math.min((item.retry_count || 1) + 1, 6);
+                        // แก้ไข: ปรับลดลิมิต STEP จาก 6 เป็น 4
+                        updates.retry_count = Math.min((item.retry_count || 1) + 1, 4);
                     }
 
                     loading.value = true;
@@ -975,13 +1084,32 @@
                         const { error } = await sb.from('qc_records').update(updates).eq('id', item.id);
                         if (error) throw error;
                         await fetchRejectItems();
-                        currentRejectItem.value = null;
+                        
+                        let nextItem = null;
+                        // แก้ไข: ปรับลูปจาก 6 เป็น 4
+                        for (let s = 1; s <= 4; s++) {
+                            const stepItems = rejectData.items.filter(i => i.retry_count === s);
+                            if (stepItems.length > 0) {
+                                nextItem = stepItems[0];
+                                activeRejectTab.value = s;
+                                break;
+                            }
+                        }
+                        currentRejectItem.value = nextItem;
+                        if(!nextItem) activeRejectTab.value = 'queue';
+
                         Swal.fire({ title: 'Updated', icon: 'success', timer: 1000 });
                     } catch (err) {
                         Swal.fire('Error', err.message, 'error');
                     } finally {
                         loading.value = false;
                     }
+                };
+
+                const getRejectDuration = (startTime) => {
+                    if(!startTime) return '-';
+                    const diff = Math.floor((currentTime.value - new Date(startTime)) / 1000);
+                    return formatDuration(diff);
                 };
 
                 const fetchSettings = async () => {
@@ -1001,11 +1129,7 @@
                             .gte('created_at', reportFilter.startDate + 'T00:00:00')
                             .lte('created_at', reportFilter.endDate + 'T23:59:59')
                             .not('end_time', 'is', null);
-                        
-                        if (reportFilter.user) {
-                            query = query.eq('username', reportFilter.user);
-                        }
-
+                        if (reportFilter.user) query = query.eq('username', reportFilter.user);
                         const { data } = await query.order('created_at', { ascending: false });
                         reports.value = data || [];
                     } finally { loading.value = false; }
@@ -1023,15 +1147,12 @@
                     } catch (err) { Swal.fire('Error', 'ไม่สามารถค้นหาข้อมูลได้: ' + err.message, 'error'); } finally { loading.value = false; }
                 };
 
-                const clearHistorySearch = () => {
-                    historySearch.value = '';
-                    historyResults.value = [];
-                    historySearched.value = false;
-                };
+                const clearHistorySearch = () => { historySearch.value = ''; historyResults.value = []; historySearched.value = false; };
 
                 const showSessionDetails = async (session) => {
                     loading.value = true;
                     try {
+                        currentViewingSession.value = session;
                         const { data } = await sb.from('qc_records').select('*').eq('session_id', session.id).order('created_at', {ascending:true});
                         sessionItems.value = data || []; showSessionModal.value = true;
                     } finally { loading.value = false; }
@@ -1042,14 +1163,13 @@
                     try {
                         const { data } = await sb.from('qc_records').select('*').eq('session_id', s.id).order('created_at', {ascending: true});
                         if(!data || data.length === 0) return;
-                        let prevTime = new Date(s.start_time).getTime();
+                        
                         const csvData = data.map(r => {
-                            const currTime = new Date(r.created_at).getTime();
-                            const durationDiff = (currTime - prevTime) / 1000; prevTime = currTime; const dateObj = new Date(r.created_at);
+                            const dateObj = new Date(r.created_at);
                             return { 
                                 'Date': dateObj.toLocaleDateString('th-TH'), 
                                 'Time': dateObj.toLocaleTimeString('th-TH'), 
-                                'KPI (Duration)': formatDuration(durationDiff), 
+                                'Reject_Duration': r.reject_duration ? formatDuration(r.reject_duration) : '0s', 
                                 'Item_UID': r.item_uid, 
                                 'Status': r.status, 
                                 'Retry': r.retry_count || 1,
@@ -1092,36 +1212,35 @@
 
                 const handleKeydown = (e) => {
                     if (['INPUT','TEXTAREA'].includes(e.target.tagName)) return;
-                    
-                    // QC Operation Keyboard Nav
                     if (currentView.value === 'qc' && qcState.step === 'working') {
                         if (e.key === 'ArrowLeft') navigateItem(-1);
                         if (e.key === 'ArrowRight') navigateItem(1);
                     }
-                    
-                    // Reject Keyboard Nav
-                    if (currentView.value === 'reject' && currentRejectItem.value) {
+                    if (currentView.value === 'reject' && currentRejectItem.value && activeRejectTab.value !== 'queue') {
                         if (e.key === 'ArrowLeft') navigateRejectItem(-1);
                         if (e.key === 'ArrowRight') navigateRejectItem(1);
                     }
                 };
 
-                const openInNewTab = (url) => {
-                    if(url) window.open(url, '_blank');
+                const openInNewTab = (url) => { if(url) window.open(url, '_blank'); };
+                const formatDate = (d) => { if(!d) return '-'; const date = new Date(d); if (isNaN(date.getTime())) return '-'; return date.toLocaleDateString('th-TH', {year:'2-digit', month:'2-digit', day:'2-digit'}) + ' ' + date.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }); };
+                const formatTime = (d) => { if(!d) return '-'; const date = new Date(d); if (isNaN(date.getTime())) return '-'; return date.toLocaleTimeString('th-TH'); };
+                
+                const formatDuration = (s) => { 
+                    if(!s || s < 0) return '0s';
+                    const h = Math.floor(s / 3600);
+                    const m = Math.floor((s % 3600) / 60);
+                    const sec = Math.floor(s % 60);
+                    return `${h > 0 ? h + 'h ' : ''}${m > 0 ? m + 'm ' : ''}${sec}s`;
                 };
 
-                const formatDate = (d) => {
-                    if(!d) return '-'; const date = new Date(d); if (isNaN(date.getTime())) return '-';
-                    return date.toLocaleDateString('th-TH', {year:'2-digit', month:'2-digit', day:'2-digit'}) + ' ' + date.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
-                };
-                const formatTime = (d) => { if(!d) return '-'; const date = new Date(d); if (isNaN(date.getTime())) return '-'; return date.toLocaleTimeString('th-TH'); };
-                const formatDuration = (s) => { const m = Math.floor(s/60); const sec = Math.floor(s%60); return `${m}:${sec.toString().padStart(2,'0')}`; };
                 const getInkColor = (name) => settingsData.ink.find(i=>i.ink_name===name)?.hex_code || '#ddd';
 
                 return {
                     loading, user, isLoggedIn, currentView, viewTitle, isSidebarOpen, loginForm, qcState, qcData, currentItem, totalItems, passedItems, failedItems, remainingItems, barcodeQuery, barcodeInput, productImageUrl, cartoonImageUrl, imgErrors, handleLogin, handleLogout, handleFileUpload, handleDrop, handleScan, selectItem, navigateItem, markStatus, finishSession, handleImageError, settingsTab, settingsData, newUser, newReason, newInk, uploadBucket, imageUploader, uploadImages, reports, reportFilter, fetchReports, searchHistory, historySearch, historyResults, historySearched, clearHistorySearch, showSessionModal, sessionItems, showSessionDetails, downloadReport, menus, formatDate, formatTime, formatDuration, getInkColor, addUser, deleteUser, addReason, deleteReason, addInk, deleteInk,
                     hasSavedSession, savedSessionInfo, restoreSession, clearBackupPrompt, getPublicUrl,
-                    rejectData, activeRejectTab, currentRejectItem, rejectSearchQuery, rejectTotalCount, fetchRejectItems, filteredRejectItems, getRejectCountByTab, handleRejectScan, markRejectStatus, navigateRejectItem, openInNewTab
+                    rejectData, activeRejectTab, currentRejectItem, rejectSearchQuery, rejectTotalCount, fetchRejectItems, filteredRejectItems, sortedRejectQueue, getRejectCountByTab, handleRejectScan, clearRejectSearch, markRejectStatus, navigateRejectItem, openInNewTab, getRejectDuration, selectQueueItem,
+                    rejectProductImageUrl, rejectCartoonImageUrl
                 };
             }
         }).mount('#app');
