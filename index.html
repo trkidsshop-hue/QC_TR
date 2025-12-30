@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>QC System V.4.7</title>
+    <title>QC System V.4.8</title>
 
     <!-- Fonts: Prompt -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -87,7 +87,7 @@
                 <span v-if="isSidebarOpen" class="font-bold text-xl ml-2 text-gray-800 uppercase">LUX<span class="text-gold-500">QC</span></span>
             </div>
             <nav class="flex-1 overflow-y-auto py-4 px-2 space-y-1">
-                <button v-for="menu in menus" :key="menu.id" @click="currentView = menu.id" 
+                <button v-for="menu in filteredMenus" :key="menu.id" @click="currentView = menu.id" 
                     :class="['w-full flex items-center gap-4 px-4 py-3 rounded-xl transition-all relative', currentView === menu.id ? 'bg-gold-500 text-white shadow-lg' : 'text-gray-500 hover:bg-gray-50 hover:text-gold-500']">
                     <i :class="['fas text-lg w-6 text-center', menu.icon]"></i>
                     <span v-if="isSidebarOpen" class="font-medium text-sm">{{ menu.label }}</span>
@@ -803,6 +803,16 @@
                     { id: 'settings', label: 'Settings', icon: 'fa-cog' }
                 ];
 
+                // แก้ไข: กรองเมนูตามสิทธิ์การใช้งาน (Admin เท่านั้นที่จะเห็น report และ settings)
+                const filteredMenus = computed(() => {
+                    if (!user.value) return [];
+                    return menus.filter(m => {
+                        if (user.value.role === 'admin') return true;
+                        // ถ้าไม่ใช่ admin จะไม่ให้เห็น report และ settings
+                        return !['report', 'settings'].includes(m.id);
+                    });
+                });
+
                 const settingsData = reactive({ users: [], reasons: [], ink: [] });
                 const newUser = reactive({ username: '', password: '', role: 'user' });
                 const newReason = ref('');
@@ -1237,7 +1247,7 @@
                 const getInkColor = (name) => settingsData.ink.find(i=>i.ink_name===name)?.hex_code || '#ddd';
 
                 return {
-                    loading, user, isLoggedIn, currentView, viewTitle, isSidebarOpen, loginForm, qcState, qcData, currentItem, totalItems, passedItems, failedItems, remainingItems, barcodeQuery, barcodeInput, productImageUrl, cartoonImageUrl, imgErrors, handleLogin, handleLogout, handleFileUpload, handleDrop, handleScan, selectItem, navigateItem, markStatus, finishSession, handleImageError, settingsTab, settingsData, newUser, newReason, newInk, uploadBucket, imageUploader, uploadImages, reports, reportFilter, fetchReports, searchHistory, historySearch, historyResults, historySearched, clearHistorySearch, showSessionModal, sessionItems, showSessionDetails, downloadReport, menus, formatDate, formatTime, formatDuration, getInkColor, addUser, deleteUser, addReason, deleteReason, addInk, deleteInk,
+                    loading, user, isLoggedIn, currentView, viewTitle, isSidebarOpen, loginForm, qcState, qcData, currentItem, totalItems, passedItems, failedItems, remainingItems, barcodeQuery, barcodeInput, productImageUrl, cartoonImageUrl, imgErrors, handleLogin, handleLogout, handleFileUpload, handleDrop, handleScan, selectItem, navigateItem, markStatus, finishSession, handleImageError, settingsTab, settingsData, newUser, newReason, newInk, uploadBucket, imageUploader, uploadImages, reports, reportFilter, fetchReports, searchHistory, historySearch, historyResults, historySearched, clearHistorySearch, showSessionModal, sessionItems, showSessionDetails, downloadReport, menus, filteredMenus, formatDate, formatTime, formatDuration, getInkColor, addUser, deleteUser, addReason, deleteReason, addInk, deleteInk,
                     hasSavedSession, savedSessionInfo, restoreSession, clearBackupPrompt, getPublicUrl,
                     rejectData, activeRejectTab, currentRejectItem, rejectSearchQuery, rejectTotalCount, fetchRejectItems, filteredRejectItems, sortedRejectQueue, getRejectCountByTab, handleRejectScan, clearRejectSearch, markRejectStatus, navigateRejectItem, openInNewTab, getRejectDuration, selectQueueItem,
                     rejectProductImageUrl, rejectCartoonImageUrl
