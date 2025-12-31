@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>QC System V.5.0</title>
+    <title>QC System V.4.9</title>
 
     <!-- Fonts: Prompt -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -637,47 +637,31 @@
                             <div class="mt-4 pt-6 border-t-2 border-dashed border-gray-200 text-center">
                                 <label class="text-sm font-black text-gray-400 uppercase tracking-widest block mb-4">Reference Images</label>
                                 <div class="flex flex-wrap justify-center gap-8">
-                                <!-- History: ส่วนแสดงรูปภาพอ้างอิง -->
-<div class="flex flex-wrap justify-center gap-8">
-    <!-- รูป Product -->
-    <div class="group cursor-pointer" @click="openInNewTab(getPublicUrl('Product_Pic', rec.product_code, '.jpg'))">
-        <div class="w-64 h-64 md:w-80 md:h-80 bg-white border-2 border-gray-200 rounded-3xl overflow-hidden shadow-sm flex items-center justify-center relative hover:border-gold-400 transition-colors">
-            <!-- แสดงรูปถ้ามีรหัส และรูปโหลดสำเร็จ -->
-            <img v-if="rec.product_code && rec.product_code !== '0' && !rec.prodErr" 
-                 :src="getPublicUrl('Product_Pic', rec.product_code, '.jpg')" 
-                 @error="rec.prodErr = true"
-                 class="max-w-full max-h-full object-contain p-2 group-hover:scale-110 transition-transform duration-500">
-            
-            <!-- รูปแบบ No Image จาก QC Operation -->
-            <div v-else class="w-full h-full bg-gray-50 flex items-center justify-center text-gray-400 flex-col uppercase font-bold">
-                <i class="fas fa-image text-4xl mb-2"></i>
-                <div class="text-xs font-bold">No Image</div>
-            </div>
-            
-            <div v-if="rec.product_code && rec.product_code !== '0'" class="absolute bottom-0 inset-x-0 bg-black/60 text-white text-[10px] py-1 text-center font-bold uppercase tracking-widest backdrop-blur-sm">Product: {{ rec.product_code }}</div>
-        </div>
-    </div>
-
-    <!-- รูป Pattern -->
-    <div class="group cursor-pointer" @click="openInNewTab(getPublicUrl('Cartoon_Pic', rec.cartoon_name, '.jpg'))">
-        <div class="w-64 h-64 md:w-80 md:h-80 bg-white border-2 border-gray-200 rounded-3xl overflow-hidden shadow-sm flex items-center justify-center relative hover:border-gold-400 transition-colors">
-            <!-- แสดงรูปถ้ามีรหัส และรูปโหลดสำเร็จ -->
-            <img v-if="rec.cartoon_name && rec.cartoon_name !== '0' && !rec.cartErr" 
-                 :src="getPublicUrl('Cartoon_Pic', rec.cartoon_name, '.jpg')" 
-                 @error="rec.cartErr = true"
-                 class="max-w-full max-h-full object-contain p-2 group-hover:scale-110 transition-transform duration-500">
-            
-            <!-- รูปแบบ No Pattern จาก QC Operation -->
-            <div v-else class="w-full h-full bg-gray-50 flex items-center justify-center text-gray-400 flex-col uppercase font-bold">
-                <i class="fas fa-shapes text-4xl mb-2"></i>
-                <div class="text-xs font-bold">No Pattern</div>
-            </div>
-
-            <div v-if="rec.cartoon_name && rec.cartoon_name !== '0'" class="absolute bottom-0 inset-x-0 bg-black/60 text-white text-[10px] py-1 text-center font-bold uppercase tracking-widest backdrop-blur-sm">Pattern: {{ rec.cartoon_name }}</div>
-                                      </div>
+                                    <!-- History: เพิ่ม Placeholder กรณีไม่มีรูป Product -->
+                                    <div class="group cursor-pointer" @click="openInNewTab(getPublicUrl('Product_Pic', rec.product_code, '.jpg'))">
+                                        <div v-if="rec.product_code && rec.product_code !== '0'" class="w-64 h-64 md:w-80 md:h-80 bg-white border-2 border-gray-200 rounded-3xl overflow-hidden shadow-sm flex items-center justify-center relative hover:border-gold-400 transition-colors">
+                                            <img :src="getPublicUrl('Product_Pic', rec.product_code, '.jpg')" class="max-w-full max-h-full object-contain p-2 group-hover:scale-110 transition-transform duration-500">
+                                            <div class="absolute bottom-0 inset-x-0 bg-black/60 text-white text-[10px] py-1 text-center font-bold uppercase tracking-widest backdrop-blur-sm">Product: {{ rec.product_code }}</div>
+                                        </div>
+                                        <div v-else class="w-full h-full bg-gray-50 flex items-center justify-center text-gray-400 flex-col">
+    <i class="fas fa-image text-3xl mb-2"></i><div class="text-xs font-bold uppercase">No Image</div>
+</div>
                                     </div>
-                                  </div>
+                                    <!-- History: เพิ่ม Placeholder กรณีไม่มีรูป Pattern -->
+                                    <div class="group cursor-pointer" @click="openInNewTab(getPublicUrl('Cartoon_Pic', rec.cartoon_name, '.jpg'))">
+                                        <div v-if="rec.cartoon_name && rec.cartoon_name !== '0'" class="w-64 h-64 md:w-80 md:h-80 bg-white border-2 border-gray-200 rounded-3xl overflow-hidden shadow-sm flex items-center justify-center relative hover:border-gold-400 transition-colors">
+                                            <img :src="getPublicUrl('Cartoon_Pic', rec.cartoon_name, '.jpg')" class="max-w-full max-h-full object-contain p-2 group-hover:scale-110 transition-transform duration-500">
+                                            <div class="absolute bottom-0 inset-x-0 bg-black/60 text-white text-[10px] py-1 text-center font-bold uppercase tracking-widest backdrop-blur-sm">Pattern: {{ rec.cartoon_name }}</div>
+                                        </div>
+                                        <div v-else class="w-64 h-64 md:w-80 md:h-80 bg-gray-50 border-2 border-gray-200 rounded-3xl overflow-hidden flex items-center justify-center text-gray-400 flex-col uppercase font-bold">
+                                            <i class="fas fa-shapes text-3xl mb-2"></i><div class="text-xs">No Pattern</div>
+                                        </div>
+                                    </div>
                                 </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
                 <!-- View: Settings -->
                 <div v-else-if="currentView === 'settings'" class="bg-white rounded-xl shadow-sm p-6 h-full overflow-y-auto uppercase">
