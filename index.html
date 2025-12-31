@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>QC System V.4.8</title>
+    <title>QC System V.5.0</title>
 
     <!-- Fonts: Prompt -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -24,6 +24,9 @@
 
     <!-- PapaParse (CSV) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+
+    <!-- SheetJS (Excel) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
     <!-- SweetAlert2 -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
@@ -125,7 +128,7 @@
                 <div v-if="currentView === 'qc'" class="h-full flex flex-col">
                     <div v-if="qcState.step === 'upload'" class="flex-1 flex flex-col items-center justify-center">
                         <div class="border-2 border-dashed border-gray-300 rounded-3xl p-12 bg-white hover:border-gold-500 cursor-pointer text-center group transition shadow-sm" @click="$refs.fileInput.click()" @dragover.prevent @drop.prevent="handleDrop">
-                            <input type="file" ref="fileInput" class="hidden" accept=".csv" @change="handleFileUpload">
+                            <input type="file" ref="fileInput" class="hidden" accept=".csv, .xlsx, .xls" @change="handleFileUpload">
                             <div class="w-20 h-20 bg-gold-50 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition duration-300">
                                 <i class="fas fa-cloud-upload-alt text-4xl text-gold-500"></i>
                             </div>
@@ -461,28 +464,28 @@
                                         <td class="px-3 py-4 text-center font-bold text-gray-400">{{ idx + 1 }}</td>
                                         <td class="px-3 py-4 font-bold uppercase text-gold-600">{{ item.qc_by }}</td>
                                         <td class="px-3 py-4 uppercase">
-                                            <div class="font-bold text-gray-700 leading-tight">{{ item.product_name || '-' }}</div>
-                                            <div class="text-[9px] text-gray-400 font-bold mt-0.5">Bill: {{ item.bill_no || '-' }}</div>
-                                            <div class="text-[9px] text-gold-500 font-mono font-bold mt-0.5">{{ item.item_uid }}</div>
+                                            <div class="font-bold text-gray-700 leading-tight text-[14px]">{{ item.product_name || '-' }}</div>
+                                            <div class="text-[14px] text-gray-400 font-bold mt-0.5">Bill: {{ item.bill_no || '-' }}</div>
+                                            <div class="text-[14px] text-gold-500 font-mono font-bold mt-0.5">{{ item.item_uid }}</div>
                                         </td>
-                                        <td class="px-3 py-4 leading-tight uppercase font-medium">
+                                        <td class="px-3 py-4 leading-tight uppercase font-medium text-sm">
                                             <div v-if="item.line1" class="text-gray-800">1: {{ item.line1 }}</div>
                                             <div v-if="item.line2" class="text-gray-800">2: {{ item.line2 }}</div>
                                             <div v-if="item.line3" class="text-gray-800">3: {{ item.line3 }}</div>
                                         </td>
-                                        <td class="px-3 py-4 uppercase leading-tight text-[10px] font-bold">
+                                        <td class="px-3 py-4 uppercase leading-tight text-[14px] font-bold">
                                             <div>Ink: {{ item.ink_color || '-' }}</div>
                                             <div class="mt-0.5">Font: {{ item.font || '-' }}</div>
                                             <div class="mt-0.5 text-gray-400">Floor: {{ item.floor || '-' }}</div>
                                         </td>
-                                        <td class="px-3 py-4 italic font-bold text-red-500 uppercase">{{ item.fail_reason || '-' }}</td>
+                                        <td class="px-3 py-4 italic font-bold text-red-500 uppercase text-[14px]">{{ item.fail_reason || '-' }}</td>
                                         <td class="px-3 py-4 text-center">
                                             <span class="bg-gray-100 px-2 py-1 rounded font-bold">STEP {{ item.retry_count || 1 }}</span>
                                         </td>
-                                        <td class="px-3 py-4 text-center font-bold text-gray-600 whitespace-nowrap">
+                                        <td class="px-3 py-4 text-center font-bold text-gray-600 whitespace-nowrap text-[14px]">
                                             {{ formatTime(item.created_at) }}
                                         </td>
-                                        <td class="px-3 py-4 text-right font-mono font-bold text-gray-800 whitespace-nowrap">
+                                        <td class="px-3 py-4 text-right font-mono font-bold text-gray-800 whitespace-nowrap text-[18px]">
                                             <i class="far fa-clock mr-1 text-[9px] text-gray-400"></i> {{ getRejectDuration(item.created_at) }}
                                         </td>
                                     </tr>
@@ -634,31 +637,47 @@
                             <div class="mt-4 pt-6 border-t-2 border-dashed border-gray-200 text-center">
                                 <label class="text-sm font-black text-gray-400 uppercase tracking-widest block mb-4">Reference Images</label>
                                 <div class="flex flex-wrap justify-center gap-8">
-                                    <!-- History: เพิ่ม Placeholder กรณีไม่มีรูป Product -->
-                                    <div class="group cursor-pointer" @click="openInNewTab(getPublicUrl('Product_Pic', rec.product_code, '.jpg'))">
-                                        <div v-if="rec.product_code && rec.product_code !== '0'" class="w-64 h-64 md:w-80 md:h-80 bg-white border-2 border-gray-200 rounded-3xl overflow-hidden shadow-sm flex items-center justify-center relative hover:border-gold-400 transition-colors">
-                                            <img :src="getPublicUrl('Product_Pic', rec.product_code, '.jpg')" class="max-w-full max-h-full object-contain p-2 group-hover:scale-110 transition-transform duration-500">
-                                            <div class="absolute bottom-0 inset-x-0 bg-black/60 text-white text-[10px] py-1 text-center font-bold uppercase tracking-widest backdrop-blur-sm">Product: {{ rec.product_code }}</div>
-                                        </div>
-                                        <div v-else class="w-64 h-64 md:w-80 md:h-80 bg-gray-50 border-2 border-gray-200 rounded-3xl overflow-hidden flex items-center justify-center text-gray-400 flex-col uppercase font-bold">
-                                            <i class="fas fa-image text-3xl mb-2"></i><div class="text-xs">No Image</div>
-                                        </div>
+                                <!-- History: ส่วนแสดงรูปภาพอ้างอิง -->
+<div class="flex flex-wrap justify-center gap-8">
+    <!-- รูป Product -->
+    <div class="group cursor-pointer" @click="openInNewTab(getPublicUrl('Product_Pic', rec.product_code, '.jpg'))">
+        <div class="w-64 h-64 md:w-80 md:h-80 bg-white border-2 border-gray-200 rounded-3xl overflow-hidden shadow-sm flex items-center justify-center relative hover:border-gold-400 transition-colors">
+            <!-- แสดงรูปถ้ามีรหัส และรูปโหลดสำเร็จ -->
+            <img v-if="rec.product_code && rec.product_code !== '0' && !rec.prodErr" 
+                 :src="getPublicUrl('Product_Pic', rec.product_code, '.jpg')" 
+                 @error="rec.prodErr = true"
+                 class="max-w-full max-h-full object-contain p-2 group-hover:scale-110 transition-transform duration-500">
+            
+            <!-- รูปแบบ No Image จาก QC Operation -->
+            <div v-else class="w-full h-full bg-gray-50 flex items-center justify-center text-gray-400 flex-col uppercase font-bold">
+                <i class="fas fa-image text-4xl mb-2"></i>
+                <div class="text-xs font-bold">No Image</div>
+            </div>
+            
+            <div v-if="rec.product_code && rec.product_code !== '0'" class="absolute bottom-0 inset-x-0 bg-black/60 text-white text-[10px] py-1 text-center font-bold uppercase tracking-widest backdrop-blur-sm">Product: {{ rec.product_code }}</div>
+        </div>
+    </div>
+
+    <!-- รูป Pattern -->
+    <div class="group cursor-pointer" @click="openInNewTab(getPublicUrl('Cartoon_Pic', rec.cartoon_name, '.jpg'))">
+        <div class="w-64 h-64 md:w-80 md:h-80 bg-white border-2 border-gray-200 rounded-3xl overflow-hidden shadow-sm flex items-center justify-center relative hover:border-gold-400 transition-colors">
+            <!-- แสดงรูปถ้ามีรหัส และรูปโหลดสำเร็จ -->
+            <img v-if="rec.cartoon_name && rec.cartoon_name !== '0' && !rec.cartErr" 
+                 :src="getPublicUrl('Cartoon_Pic', rec.cartoon_name, '.jpg')" 
+                 @error="rec.cartErr = true"
+                 class="max-w-full max-h-full object-contain p-2 group-hover:scale-110 transition-transform duration-500">
+            
+            <!-- รูปแบบ No Pattern จาก QC Operation -->
+            <div v-else class="w-full h-full bg-gray-50 flex items-center justify-center text-gray-400 flex-col uppercase font-bold">
+                <i class="fas fa-shapes text-4xl mb-2"></i>
+                <div class="text-xs font-bold">No Pattern</div>
+            </div>
+
+            <div v-if="rec.cartoon_name && rec.cartoon_name !== '0'" class="absolute bottom-0 inset-x-0 bg-black/60 text-white text-[10px] py-1 text-center font-bold uppercase tracking-widest backdrop-blur-sm">Pattern: {{ rec.cartoon_name }}</div>
+                                      </div>
                                     </div>
-                                    <!-- History: เพิ่ม Placeholder กรณีไม่มีรูป Pattern -->
-                                    <div class="group cursor-pointer" @click="openInNewTab(getPublicUrl('Cartoon_Pic', rec.cartoon_name, '.jpg'))">
-                                        <div v-if="rec.cartoon_name && rec.cartoon_name !== '0'" class="w-64 h-64 md:w-80 md:h-80 bg-white border-2 border-gray-200 rounded-3xl overflow-hidden shadow-sm flex items-center justify-center relative hover:border-gold-400 transition-colors">
-                                            <img :src="getPublicUrl('Cartoon_Pic', rec.cartoon_name, '.jpg')" class="max-w-full max-h-full object-contain p-2 group-hover:scale-110 transition-transform duration-500">
-                                            <div class="absolute bottom-0 inset-x-0 bg-black/60 text-white text-[10px] py-1 text-center font-bold uppercase tracking-widest backdrop-blur-sm">Pattern: {{ rec.cartoon_name }}</div>
-                                        </div>
-                                        <div v-else class="w-64 h-64 md:w-80 md:h-80 bg-gray-50 border-2 border-gray-200 rounded-3xl overflow-hidden flex items-center justify-center text-gray-400 flex-col uppercase font-bold">
-                                            <i class="fas fa-shapes text-3xl mb-2"></i><div class="text-xs">No Pattern</div>
-                                        </div>
-                                    </div>
+                                  </div>
                                 </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
 
                 <!-- View: Settings -->
                 <div v-else-if="currentView === 'settings'" class="bg-white rounded-xl shadow-sm p-6 h-full overflow-y-auto uppercase">
@@ -933,26 +952,73 @@
 
                 const handleLogout = () => { user.value = null; localStorage.removeItem('qc_user'); qcState.step='upload'; };
 
+                // --- ฟังก์ชันช่วยจัดการข้อมูลให้ตรงกับ Table ใน Supabase ---
+                const mapImportedData = (data) => {
+                    qcData.items = data.map(r => ({
+                        uid: (r['Item UID'] || '').toString(), 
+                        product_code: (r['รหัสสินค้า'] || '0').toString(), 
+                        product_name: r['ชื่อสินค้า'] || '', 
+                        bill_no: (r['เลขบิล'] || '').toString(), 
+                        ink_color: r['สีหมึก'] || '', 
+                        floor: (r['ชั้นที่'] || '').toString(), 
+                        cartoon_name: (r['ลายการ์ตูน'] || '0').toString(), 
+                        font: r['ฟอนต์'] || '', 
+                        line1: (r['บรรทัด 1'] || '').toString(), 
+                        line2: (r['บรรทัด 2'] || '').toString(), 
+                        line3: (r['บรรทัด 3'] || '').toString(),
+                        qty: r['จำนวน'] || 1, 
+                        remark: r['หมายเหตุ'] || '', 
+                        status: 'pending', 
+                        check_time: null
+                    }));
+                };
+
                 const processCSV = (file) => {
                     loading.value = true;
                     Papa.parse(file, {
                         header: true, skipEmptyLines: true,
                         complete: async (res) => {
-                            qcData.items = res.data.map(r => ({
-                                uid: r['Item UID'], product_code: r['รหัสสินค้า'], product_name: r['ชื่อสินค้า'], 
-                                bill_no: r['เลขบิล'], ink_color: r['สีหมึก'], floor: r['ชั้นที่'], 
-                                cartoon_name: r['ลายการ์ตูน'], font: r['ฟอนต์'], 
-                                line1: r['บรรทัด 1'], line2: r['บรรทัด 2'], line3: r['บรรทัด 3'],
-                                qty: r['จำนวน'], remark: r['หมายเหตุ'], status: 'pending', check_time: null
-                            }));
+                            mapImportedData(res.data);
                             qcState.filename = file.name; qcState.startTime = new Date(); qcState.step = 'working';
                             loading.value = false;
                         }
                     });
                 };
 
-                const handleFileUpload = (e) => { if(e.target.files[0]) processCSV(e.target.files[0]); };
-                const handleDrop = (e) => { if(e.dataTransfer.files[0]) processCSV(e.dataTransfer.files[0]); };
+                const processExcel = (file) => {
+                    loading.value = true;
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        const data = new Uint8Array(e.target.result);
+                        const workbook = XLSX.read(data, { type: 'array' });
+                        const firstSheetName = workbook.SheetNames[0];
+                        const worksheet = workbook.Sheets[firstSheetName];
+                        const jsonData = XLSX.utils.sheet_to_json(worksheet);
+                        
+                        mapImportedData(jsonData);
+                        qcState.filename = file.name; qcState.startTime = new Date(); qcState.step = 'working';
+                        loading.value = false;
+                    };
+                    reader.readAsArrayBuffer(file);
+                };
+
+                const handleFileUpload = (e) => { 
+                    const file = e.target.files[0];
+                    if(!file) return;
+                    const extension = file.name.split('.').pop().toLowerCase();
+                    if(extension === 'csv') processCSV(file);
+                    else if(extension === 'xlsx' || extension === 'xls') processExcel(file);
+                    else Swal.fire('Error', 'กรุณาใช้ไฟล์ .csv หรือ .xlsx เท่านั้น', 'error');
+                };
+
+                const handleDrop = (e) => { 
+                    const file = e.dataTransfer.files[0];
+                    if(!file) return;
+                    const extension = file.name.split('.').pop().toLowerCase();
+                    if(extension === 'csv') processCSV(file);
+                    else if(extension === 'xlsx' || extension === 'xls') processExcel(file);
+                    else Swal.fire('Error', 'กรุณาใช้ไฟล์ .csv หรือ .xlsx เท่านั้น', 'error');
+                };
                 const handleScan = () => {
                     const query = barcodeQuery.value.trim().toUpperCase();
                     const found = qcData.items.find(i => i.uid === query);
